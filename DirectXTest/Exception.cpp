@@ -4,7 +4,7 @@ void* ExceptionData_t::mem_alloc (size_t size)
 {
 	if (size > 0)
 	{
-		allocatedMem_ = new ExceptionHandler[size];
+		allocatedMem_ = new ExceptionHandler_t[size];
 		usedMem_ = 0;
 		availableMem_ = static_cast<int64_t> (size);
 	}
@@ -14,7 +14,9 @@ void* ExceptionData_t::mem_alloc (size_t size)
 		{
 			if (availableMem_ == 0)
 			{
-				MessageBoxW (GetForegroundWindow (), L"Not enough memory for exceptions\n", APPLICATION_TITLE, MB_OK);
+				MessageBoxW (GetForegroundWindow (),
+							 L"Not enough memory for exceptions\n", 
+							 APPLICATION_TITLE_W, MB_OK);
 				return nullptr;
 			}
 			usedMem_++;
@@ -65,7 +67,7 @@ void ExceptionData_t::CloseLog ()
 }
 
 
-ExceptionHandler::ExceptionHandler (const ExceptionHandler& that) :
+ExceptionHandler_t::ExceptionHandler_t (const ExceptionHandler_t& that) :
 	message_ (that.message_),
 	error_code_ (that.error_code_),
 	line_ (that.line_),
@@ -74,7 +76,7 @@ ExceptionHandler::ExceptionHandler (const ExceptionHandler& that) :
 	pt_ (that.pt_)
 {}
 
-ExceptionHandler& ExceptionHandler::operator = (const ExceptionHandler& that)
+ExceptionHandler_t& ExceptionHandler_t::operator = (const ExceptionHandler_t& that)
 {
 	message_ = that.message_;
 	error_code_ = that.error_code_;
@@ -85,7 +87,7 @@ ExceptionHandler& ExceptionHandler::operator = (const ExceptionHandler& that)
 	return *this;
 }
 
-ExceptionHandler::ExceptionHandler () :
+ExceptionHandler_t::ExceptionHandler_t () :
 	message_ (""),
 	error_code_ (0),
 	line_ (0),
@@ -94,10 +96,10 @@ ExceptionHandler::ExceptionHandler () :
 	pt_ (this)
 {}
 
-ExceptionHandler::ExceptionHandler (const char*     message,
-	int             error_code,
-	int             line,
-	const char*     file) :
+ExceptionHandler_t::ExceptionHandler_t (const char*     message,
+									int             error_code,
+									int             line,
+									const char*     file) :
 	message_ (message),
 	error_code_ (error_code),
 	line_ (line),
@@ -106,11 +108,11 @@ ExceptionHandler::ExceptionHandler (const char*     message,
 	pt_ (this)
 {}
 
-ExceptionHandler::ExceptionHandler (const char*             message,
-	int                     error_code,
-	const ExceptionHandler* cause,
-	int                     line,
-	const char*             file) :
+ExceptionHandler_t::ExceptionHandler_t (const char*             message,
+									int                     error_code,
+									const ExceptionHandler_t* cause,
+									int                     line,
+									const char*             file) :
 	message_ (message),
 	error_code_ (error_code),
 	line_ (line),
@@ -119,10 +121,10 @@ ExceptionHandler::ExceptionHandler (const char*             message,
 	pt_ (this)
 {}
 
-ExceptionHandler::~ExceptionHandler ()
+ExceptionHandler_t::~ExceptionHandler_t ()
 {}
 
-void ExceptionHandler::WriteLog (ExceptionData_t* data) const
+void ExceptionHandler_t::WriteLog (ExceptionData_t* data) const
 {
 	if (!data->log_)
 	{
@@ -140,7 +142,24 @@ void ExceptionHandler::WriteLog (ExceptionData_t* data) const
 	if (data->log_) data->CloseLog ();
 }
 
-void* ExceptionHandler::operator new (size_t, ExceptionData_t* data)
+void* ExceptionHandler_t::operator new (size_t, ExceptionData_t* data)
 {
 	return data->mem_alloc ();
+}
+
+
+NZA_t::NZA_t () :
+	not_yet_destroyed_ (1)
+{}
+
+NZA_t::~NZA_t ()
+{
+	not_yet_destroyed_ = 0;
+}
+void  NZA_t::ok ()
+{
+	if (this == nullptr)
+		_EXC_N (NULL_THIS, "Null this")
+	if (not_yet_destroyed_ == 0)
+		_EXC_N (DESTROYED, "Trying to access destroyed object")
 }
