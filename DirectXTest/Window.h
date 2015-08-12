@@ -7,18 +7,23 @@ class WindowClass : NZA_t
 private:
 	HWND hwnd_;
 	SIZE size_;
-	bool resizable_;
+	UINT style_;
+	bool running_;
 
-	void SetWindowHandle (HWND hwnd);
+	void Destroy ();
+	void CreateWin32Window ();
 
 public:
 	void ok ();
-	WindowClass (int widthC, 
-				 int heightC, 
-				 bool resizable = false);
+	WindowClass (int width, 
+				 int height);
 	~WindowClass ();
 
 	static void RegisterApplication ();
+
+	UINT width  ();
+	UINT height ();
+	HWND hwnd ();
 
 	friend LRESULT CALLBACK WindowCallback (HWND windowHandle,
 											UINT msg,
