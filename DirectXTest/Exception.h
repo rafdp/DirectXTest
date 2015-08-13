@@ -111,7 +111,7 @@ public:
 
 	~ExceptionHandler_t ();
 	void WriteLog (ExceptionData_t* data) const;
-	void* operator new(size_t s, ExceptionData_t* data);
+	void* operator new(size_t s, ExceptionData_t* data) throw();
 };
 
 class ExceptionData_t : NonCopiable_t

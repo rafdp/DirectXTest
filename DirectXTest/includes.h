@@ -2,11 +2,14 @@
 
 #include <exception>
 #include <windows.h>
+#include <windowsx.h>
+#include <winuser.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <iostream>
 #include <conio.h>
 #include <new>
+#include <vector>
 
 #include <d3d11.h>
 #include <d3dx11.h>
