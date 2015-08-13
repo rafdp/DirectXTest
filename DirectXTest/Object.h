@@ -66,7 +66,7 @@ class Direct3DObject : NZA_t
 	D3D11_PRIMITIVE_TOPOLOGY topology_;
 	bool drawIndexed_;
 	UINT objectId_;
-	float alpha_;
+	bool blending_;
 	Direct3DObjectBuffer objData_;
 	XMMATRIX world_;
 
@@ -89,6 +89,7 @@ class Direct3DObject : NZA_t
 	
 public:
 	Direct3DObject (XMMATRIX& world, 
+					bool blending = false,
 					bool drawIndexed = false,
 					D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	~Direct3DObject ();

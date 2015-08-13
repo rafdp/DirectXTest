@@ -45,6 +45,7 @@ void Direct3DObject::ok ()
 }
 
 Direct3DObject::Direct3DObject (XMMATRIX& world,
+								bool blending,
 								bool drawIndexed,
 								D3D11_PRIMITIVE_TOPOLOGY topology) :
 	vertices_     (),
@@ -52,7 +53,7 @@ Direct3DObject::Direct3DObject (XMMATRIX& world,
 	topology_     (topology),
 	drawIndexed_  (drawIndexed),
 	objectId_     (),
-	alpha_        (0.0f),
+	blending_     (blending),
 	objData_      ({ XMMatrixIdentity (), XMMatrixIdentity () }),
 	world_        (world),
 	vertexBuffer_ (nullptr),

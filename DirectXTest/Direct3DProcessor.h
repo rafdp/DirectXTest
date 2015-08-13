@@ -18,6 +18,7 @@ class Direct3DProcessor : NZA_t
 
 	std::vector<ID3D11DepthStencilState*> depthStencilStates_;
 	std::vector<ID3D11RasterizerState*>   rasterizerStates_;
+	std::vector<ID3D11BlendState*>        blendStates_;
 	std::vector<ID3D11InputLayout*>       layouts_;
 
 	std::vector<Direct3DObject*> objects_;
@@ -48,6 +49,10 @@ public:
 							   bool wireframe = false, 
 							   bool cullNone  = false);
 	void ApplyRasterizerState (UINT n);
+
+
+	UINT AddBlendState (bool blend = false);
+	void ApplyBlendState (UINT n);
 
 	void RegisterObject (Direct3DObject* obj);
 	std::vector<Direct3DObject*>& GetObjectsVector ();

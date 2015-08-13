@@ -42,6 +42,7 @@ try :
 	ApplyDepthStencilState (AddDepthStencilState ());
 	ApplyRasterizerState   (AddRasterizerState   (true));
 	AddRasterizerState   (false);
+	ApplyBlendState (AddBlendState ());
 
 
 
@@ -103,6 +104,12 @@ void Direct3DProcessor::ProcessDrawing (Direct3DCamera* cam)
 	{
 		EnableShader ((*i)->vertexShader_);
 		EnableShader ((*i)->pixelShader_);
+		if ((*i)->blending_)
+		{
+			ApplyRasterizerState (1);
+			(*i)->Draw (deviceContext_, cam);
+			ApplyRasterizerState (0);
+		}
 		(*i)->Draw (deviceContext_, cam);
 	}
 	END_EXCEPTION_HANDLING (PROCESS_DRAWING)
@@ -343,6 +350,55 @@ void Direct3DProcessor::ApplyRasterizerState (UINT n)
 				n _
 				rasterizerStates_.size ());
 	deviceContext_->RSSetState (rasterizerStates_[n]);
+	END_EXCEPTION_HANDLING (APPLY_DEPTH_STENCIL_STATE)
+}
+
+UINT Direct3DProcessor::AddBlendState (bool blend)
+{
+	BEGIN_EXCEPTION_HANDLING
+
+	D3D11_BLEND_DESC blendDesc = {};
+
+	D3D11_RENDER_TARGET_BLEND_DESC rtbd = {};
+
+	rtbd.BlendEnable = blend;
+	rtbd.SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	rtbd.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	rtbd.BlendOp = D3D11_BLEND_OP_ADD;
+	rtbd.SrcBlendAlpha = D3D11_BLEND_ZERO;
+	rtbd.DestBlendAlpha = D3D11_BLEND_ZERO;
+	rtbd.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	rtbd.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+	blendDesc.RenderTarget[0] = rtbd;
+
+	ID3D11BlendState* newBlendState = nullptr;
+
+	HRESULT result = S_OK;
+
+	result = device_->CreateBlendState (&blendDesc, &newBlendState);
+	if (result != S_OK)
+		_EXC_N (CREATE_BLEND_STATE,
+				"D3D: Failed to create blend state (0x%x)" _
+				result);
+
+	blendStates_.push_back (newBlendState);
+
+	return blendStates_.size () - 1;
+
+
+	END_EXCEPTION_HANDLING (ADD_BLEND_STATE)
+}
+
+void Direct3DProcessor::ApplyBlendState (UINT n)
+{
+	BEGIN_EXCEPTION_HANDLING
+	if (n >= blendStates_.size ())
+		_EXC_N (OUT_OF_RANGE, "D3D: Cannot apply blend state (%d of %d available)" _
+				n _
+				blendStates_.size ());
+
+	deviceContext_->OMSetBlendState (blendStates_[n], NULL, 0xFFFFFFFF);
 	END_EXCEPTION_HANDLING (APPLY_DEPTH_STENCIL_STATE)
 }
 

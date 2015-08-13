@@ -88,7 +88,8 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 {
 	XMMATRIX world = XMMatrixTranslation (0.0f, 0.0f, 0.0f);
 
-	Direct3DObject* cube = new Direct3DObject (world, true, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	Direct3DObject* cube = new Direct3DObject (world, 
+											   true, true, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	Vertex_t vertices[] =
 	{
@@ -126,7 +127,8 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 	for (int i = 0; i < sizeof (vertices) / sizeof (Vertex_t); i++)
 		vertices[i].SetColor (rand () * 1.0f / RAND_MAX, 
 							  rand () * 1.0f / RAND_MAX, 
-							  rand () * 1.0f / RAND_MAX);
+							  rand () * 1.0f / RAND_MAX,
+							  0.3f);
 
 	cube->AddVertexArray (vertices, sizeof (vertices) / sizeof (Vertex_t));
 
@@ -191,6 +193,6 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 
 	proc->RegisterObject (cube);
 
-
+	proc->ApplyBlendState (proc->AddBlendState (true));
 	return cube;
 }
