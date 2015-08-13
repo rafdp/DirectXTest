@@ -3,6 +3,7 @@
 ExceptionData_t* __EXPN__ = nullptr;
 
 Direct3DObject* GetCube (Direct3DProcessor* proc);
+void GetParticles (Direct3DProcessor* proc);
 
 int WINAPI WinMain (HINSTANCE hInstance,
 					HINSTANCE legacy,
@@ -22,16 +23,13 @@ int WINAPI WinMain (HINSTANCE hInstance,
 							0.0f, 0.0f, 0.0f,
 							0.0, 1.0f, 0.0f);
 
-		XMMATRIX world = XMMatrixIdentity ();
-
-		Direct3DObject* cube = GetCube (&d3dProc);
+		GetParticles (&d3dProc);
 
 		d3dProc.ProcessObjects ();
 		//d3dProc.LockShader ();
 		cam.Update ();
 
 		MSG msg = {};
-		float rot = 0.0f;
 		while (true)
 		{
 			if (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
@@ -42,22 +40,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				if (msg.message == WM_QUIT) break;
 			}
 			// SCENE PROCESSING
-
-			rot += .003f;
-			if (rot > 6.28f)
-				rot = 0.0f;
-
-			//Reset cube1World
-			//Define cube1's world space matrix
-
-			//Set cube1's world space using the transformations
-			cube->GetWorld () = XMMatrixRotationAxis (XMVectorSet (-0.1f + 2.5f * sin (rot), 
-																   1.0f - 0.8f * sin (rot), 
-																   0.7f + 1.5f * sin (rot), 
-																   0.0f), 
-													  6.28f * sin (rot));
-
-			//cube->GetWorld () *= XMMatrixRotationAxis (XMVectorSet (1.0f, 0.5f, 0.7f, 0.0f), 0.01f);
+			
 			d3dProc.ProcessDrawing (&cam);
 			d3dProc.Present ();
 
@@ -155,27 +138,7 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 	};
 
 	cube->AddIndexArray (mapping, sizeof (mapping) / sizeof (UINT));
-	/*
-	Vertex_t vertices[3] =
-	{
-		{ 0.7f,  0.0f,  0.0f },
-		{ 0.0f,  0.7f,  0.0f },
-		{ -0.5f,  -0.5f,  0.0f }
-	};
-
-	for (int i = 0; i < 3; i++)
-		vertices[i].SetColor (1.0f, 0.5f, 0.0f);
-
-	cube->AddVertexArray (vertices, 3);
-
-
-	UINT mapping[] =
-	{
-		2, 1, 0
-	};
 	
-	cube->AddIndexArray (mapping, 3);
-	*/
 	ShaderDesc_t vertS = proc->LoadShader ("shaders.hlsl",
 										   "VShader",
 										   SHADER_VERTEX);
@@ -195,4 +158,57 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 
 	proc->ApplyBlendState (proc->AddBlendState (true));
 	return cube;
+}
+
+void GetParticles (Direct3DProcessor* proc)
+{
+	XMMATRIX world = XMMatrixTranslation (0.0f, 0.0f, 0.0f);
+
+	Vertex_t vertices[3] = {};
+	UINT indices[3] = { 0, 1, 2 };
+	float x = 0.0f;
+	float y = 0.0f;
+	ShaderDesc_t vertS = proc->LoadShader ("shaders.hlsl",
+										   "VShader",
+										   SHADER_VERTEX);
+
+	ShaderDesc_t pixS = proc->LoadShader ("shaders.hlsl",
+										   "PShader",
+										   SHADER_PIXEL);
+
+	UINT n = proc->AddLayout (vertS, true, false, false, true);
+
+	proc->EnableLayout (n);
+	float d = 0;
+
+	for (int i = 0; i < 30000; i++)
+	{
+		x = (rand () % 1000 - 500.0f) / 150.0f;
+		y = (rand () % 1000 - 500.0f) / 150.0f;
+
+		d = rand () * 0.05f / RAND_MAX;
+
+		vertices[0].SetPos (x - d, y - d, 0.0f);
+		vertices[0].SetColor (rand () * 1.0f / RAND_MAX,
+							  rand () * 1.0f / RAND_MAX,
+							  rand () * 1.0f / RAND_MAX, 
+							  0.3f);
+
+		vertices[1] = vertices[0];
+		vertices[1].y = y + d;
+
+		vertices[2] = vertices[1];
+		vertices[2].x = x + d;
+
+		Direct3DObject* particle = new Direct3DObject (world, true, true);
+		particle->AddVertexArray (vertices, 3);
+		particle->AddIndexArray (indices, 3);
+
+		particle->AttachVertexShader (vertS);
+		particle->AttachPixelShader (pixS);
+		proc->SetLayout (particle, n);
+		proc->RegisterObject (particle);
+	}
+
+	proc->ApplyBlendState (proc->AddBlendState (true));
 }

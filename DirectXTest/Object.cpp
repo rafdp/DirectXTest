@@ -224,7 +224,7 @@ void Direct3DObject::Draw (ID3D11DeviceContext* deviceContext,
 	XMMATRIX tempWVP = world_ * cam->GetView () * cam->GetProjection ();
 
 	objData_.WVP   = XMMatrixTranspose (tempWVP);
-	objData_.World = XMMatrixTranspose (world_);
+	//objData_.World = XMMatrixTranspose (world_);
 
 
 	deviceContext->UpdateSubresource (objectBuffer_, 
