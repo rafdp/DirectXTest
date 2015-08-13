@@ -20,7 +20,7 @@ std::string& CreateStringOnFail (const char* text, ...)
 	return *strPtr;
 }
 
-void CleverMessageBox (const char* text, ...)
+void _MessageBox (const char* text, ...)
 {
 	if (!text)
 	{

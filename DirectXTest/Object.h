@@ -33,7 +33,7 @@ struct Vertex_t
 	float x, y, z;
 	float nx, ny, nz;
 	float u, v, w;
-	float r, g, b;
+	float r, g, b, a;
 	
 
 	void SetPos (float x_, 
@@ -50,7 +50,8 @@ struct Vertex_t
 
 	void SetColor (float r_,
 				   float g_,
-				   float b_);
+				   float b_,
+				   float a_ = 0.0f);
 };
 
 struct Direct3DObjectBuffer
@@ -76,17 +77,20 @@ class Direct3DObject : NZA_t
 
 	ShaderDesc_t vertexShader_;
 	ShaderDesc_t pixelShader_;
+	UINT layoutN_;
 
 	friend class Direct3DProcessor;
 
 	void SetID (UINT id);
 
 	void ok ();
+
+	void SaveLayout (UINT n);
 	
 public:
-	Direct3DObject (XMMATRIX& world,
-					D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
-					bool drawIndexed = false);
+	Direct3DObject (XMMATRIX& world, 
+					bool drawIndexed = false,
+					D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	~Direct3DObject ();
 
 	void AddVertexArray (Vertex_t* vert, 
@@ -99,7 +103,6 @@ public:
 
 	void SetWVP (XMMATRIX& matrix);
 	void SetWorld (XMMATRIX& matrix);
-	XMMATRIX& GetWVP ();
 	XMMATRIX& GetWorld ();
 
 	void Draw (ID3D11DeviceContext* deviceContext,

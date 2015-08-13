@@ -10,6 +10,9 @@ void Direct3DProcessor::ok ()
 		_EXC_N (NULL_DEVICE, "D3D: Null device");
 	if (deviceContext_ == nullptr)
 		_EXC_N (NULL_DEVICE_CONTEXT, "D3D: Null device context");
+	if (wnd_ == nullptr)
+		_EXC_N (NULL_WND, "D3D: Null window pointer");
+
 }
 
 Direct3DProcessor::Direct3DProcessor (WindowClass* wnd, uint8_t buffers)
@@ -33,16 +36,12 @@ try :
 	if (wnd == nullptr)
 		_EXC_N (NULL_WND,
 				"D3D: Cannot create environment over a null window");
-
 	InitDeviceAndSwapChain ();
-
 	InitViewport ();
-	
 	InitDepthStencilView ();
-
 	ApplyDepthStencilState (AddDepthStencilState ());
 	ApplyRasterizerState   (AddRasterizerState   (true));
-	ApplyRasterizerState   (AddRasterizerState   (false));
+	AddRasterizerState   (false);
 
 
 
@@ -54,15 +53,12 @@ Direct3DProcessor::~Direct3DProcessor ()
 #define free(var) var->Release (); var = nullptr
 		
 		free (swapChain_);
-		CleverMessageBox ("A");
 		free (device_);
 		free (deviceContext_);
 
 		free (currentBuffer_);
-		CleverMessageBox ("B");
 		free (depthBuffer_);
 		free (depthStencilView_);
-		CleverMessageBox ("C");
 
 		for (auto i = depthStencilStates_.begin ();
 			      i < depthStencilStates_.end ();
@@ -78,7 +74,6 @@ Direct3DProcessor::~Direct3DProcessor ()
 				  i < objects_.end ();
 			      i++)
 			delete *i;
-		CleverMessageBox ("D");
 
 		depthStencilStates_.clear ();
 		rasterizerStates_.clear ();
@@ -179,7 +174,7 @@ void Direct3DProcessor::ApplyDepthStencilState (UINT n)
 
 void Direct3DProcessor::InitDeviceAndSwapChain ()
 {
-	BEGIN_EXCEPTION_HANDLING
+	try {
 
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
 
@@ -214,15 +209,17 @@ void Direct3DProcessor::InitDeviceAndSwapChain ()
 											&device_,
 											NULL,
 											&deviceContext_);
+	
 	if (result != S_OK)
 		_EXC_N (DEVICE_SWAP_CHAIN,
 				"D3D: Failed to create device and swap chain (0x%x)" _ result)
 
-		ID3D11Texture2D* tempBufferPtr = nullptr;
+	ID3D11Texture2D* tempBufferPtr = nullptr;
 
 	result = swapChain_->GetBuffer (0,
 									_uuidof (ID3D11Texture2D),
 									(void**)&tempBufferPtr);
+
 
 	if (result != S_OK)
 		_EXC_N (DEVICE_SWAP_CHAIN_GET_BUFFER,
@@ -327,9 +324,12 @@ UINT Direct3DProcessor::AddRasterizerState (bool clockwise, bool wireframe, bool
 	result = device_->CreateRasterizerState (&rasterDesc, &newRasterState);
 	if (result != S_OK)
 		_EXC_N (CREATE_RASTERIZER_STATE,
-				"D3D: Failed to create rasterizer state");
+				"D3D: Failed to create rasterizer state (0x%x)" _
+				result);
 
 	rasterizerStates_.push_back (newRasterState);
+
+	return rasterizerStates_.size () - 1;
 
 	
 	END_EXCEPTION_HANDLING (ADD_RASTERIZER_STATE)
@@ -454,10 +454,10 @@ UINT Direct3DProcessor::AddLayout (ShaderDesc_t desc,
 								   offsetof (Vertex_t, u),
 								   D3D11_INPUT_PER_VERTEX_DATA,
 								   0 });
-	if (texture & !color)
+	if (!texture & color)
 		inputElements.push_back ({ "COLOR",
 								   0,
-								   DXGI_FORMAT_R32G32B32_FLOAT,
+								   DXGI_FORMAT_R32G32B32A32_FLOAT,
 								   0,
 								   offsetof (Vertex_t, r),
 								   D3D11_INPUT_PER_VERTEX_DATA,
@@ -471,6 +471,10 @@ UINT Direct3DProcessor::AddLayout (ShaderDesc_t desc,
 										 shaderManager_.GetBlob (desc)->GetBufferSize (),
 										 &layouts_.back ());
 
+	if (result != S_OK)
+		_EXC_N (CREATE_LAYOUT, "D3D: Failed to create layout (0x%x)" _
+				result)
+	return layouts_.size () - 1;
 	END_EXCEPTION_HANDLING (ADD_LAYOUT)
 }
 
@@ -479,9 +483,28 @@ void Direct3DProcessor::EnableLayout (UINT n)
 	BEGIN_EXCEPTION_HANDLING
 
 	if (n >= layouts_.size ())
-		_EXC_N (LAYOUT_INDEX, "D3D: Invalid layout index")
+		_EXC_N (LAYOUT_INDEX, "D3D: Invalid layout index (%d of %d available)" _
+				n _
+				layouts_.size ())
 
 	deviceContext_->IASetInputLayout (layouts_[n]);
 
 	END_EXCEPTION_HANDLING (ENABLE_LAYOUT)
+}
+
+
+void Direct3DProcessor::SetLayout (Direct3DObject* obj, UINT n)
+{
+	BEGIN_EXCEPTION_HANDLING
+
+	if (obj == nullptr)
+		_EXC_N (NULL_OBJECT, "D3D: Cannot set layout to null object");
+
+	if (n >= layouts_.size () || layouts_[n] == nullptr)
+		_EXC_N (OUT_OF_RANGE, "D3D: Cannot set layout (%d of %d available) to object (obj %d)" _
+				n _
+				layouts_.size () _ 
+				obj->objectId_);
+	obj->SaveLayout (n);
+	END_EXCEPTION_HANDLING (SET_LAYOUT)
 }

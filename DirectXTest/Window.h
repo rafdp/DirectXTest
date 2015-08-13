@@ -8,7 +8,7 @@ private:
 	HWND hwnd_;
 	SIZE size_;
 	UINT style_;
-	bool running_;
+	volatile bool running_;
 
 	void Destroy ();
 	void CreateWin32Window ();

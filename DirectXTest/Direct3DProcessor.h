@@ -68,4 +68,5 @@ public:
 					bool color = false);
 
 	void EnableLayout (UINT n);
+	void SetLayout (Direct3DObject* obj, UINT n);
 };

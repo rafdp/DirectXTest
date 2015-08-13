@@ -69,6 +69,9 @@ enum ERRORS
 	E (74, GET_BLOB)
 	E (75, ENABLE_LAYOUT)
 	E (76, LAYOUT_INDEX)
+	E (77, SET_LAYOUT)
+	E (78, NULL_OBJECT)
+	E (79, CREATE_LAYOUT)
 };
 
 const wchar_t  APPLICATION_TITLE_W[] = L"DirectXTest";
@@ -77,7 +80,7 @@ const uint16_t MAX_STRING_LENGTH = 512;
 const UINT     CONST_WINDOW_STYLE = WS_MINIMIZEBOX | WS_BORDER | WS_CAPTION | WS_SYSMENU;
 
 std::string& CreateStringOnFail (const char* text, ...);
-void CleverMessageBox (const char* text, ...);
+void _MessageBox (const char* text, ...);
 
 const UINT SCREEN_WIDTH  = GetSystemMetrics (SM_CXSCREEN);
 const UINT SCREEN_HEIGHT = GetSystemMetrics (SM_CYSCREEN);

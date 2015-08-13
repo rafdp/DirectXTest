@@ -7,10 +7,11 @@ void WindowClass::ok ()
 
 WindowClass::WindowClass (int width, 
 						  int height)
-	try :
-	hwnd_  (nullptr),
-	size_  ({ width, height }),
-	style_ (CONST_WINDOW_STYLE)
+	try :  
+	hwnd_    (nullptr),
+	size_    ({ width, height }),
+	style_   (CONST_WINDOW_STYLE),
+	running_ (false)
 {
 	RegisterApplication ();
 	CreateWin32Window ();
@@ -20,9 +21,11 @@ _END_EXCEPTION_HANDLING (CTOR)
 WindowClass::~WindowClass ()
 {
 	BEGIN_EXCEPTION_HANDLING
-
 	if (hwnd_ && running_)
-		SendNotifyMessage (hwnd_, WM_DESTROY, 0, 0);
+	{
+		Destroy ();
+		SendNotifyMessage (hwnd_, WM_DESTROY, 0, 100500);
+	}
 
 	END_EXCEPTION_HANDLING (DTOR)
 }
@@ -39,7 +42,6 @@ void WindowClass::RegisterApplication ()
 		wnd.cbSize = sizeof (wnd);
 		wnd.style = CS_HREDRAW | CS_VREDRAW;
 		wnd.lpfnWndProc = (WNDPROC)WindowCallback;
-		//wnd.hIcon = LoadIcon (NULL, IDI_WINLOGO);
 		wnd.hCursor = LoadCursor (NULL, IDC_ARROW);
 		wnd.hbrBackground = (HBRUSH)GetStockObject (HOLLOW_BRUSH);
 		wnd.lpszClassName = APPLICATION_TITLE_W;
@@ -61,7 +63,6 @@ HWND WindowClass::hwnd ()
 void WindowClass::Destroy ()
 {
 	BEGIN_EXCEPTION_HANDLING
-
 	if (!running_)
 		_EXC_N (NOT_RUNNING,
 				"Trying to destory already destroyed window")
@@ -123,6 +124,7 @@ LRESULT CALLBACK WindowCallback (HWND windowHandle,
 {
 	try
 	{
+
 		switch (msg)
 		{
 			case WM_CREATE:
@@ -135,22 +137,17 @@ LRESULT CALLBACK WindowCallback (HWND windowHandle,
 			}
 			case WM_DESTROY:
 			{
-				WindowClass* windowPtr = reinterpret_cast<WindowClass*> (GetWindowLong (windowHandle, GWL_USERDATA));
-
-				if (lparam != 100500)
-				{
-					windowPtr->Destroy ();
-				}
-				PostQuitMessage (WM_DESTROY);
+				PostQuitMessage (0);
 				return 0;
 			}
 			case WM_KEYDOWN:
 			{
 				if (wparam == VK_ESCAPE)
 				{
-					PostMessage (windowHandle, WM_CLOSE, 0, 0);
+					SendNotifyMessage (windowHandle, WM_CLOSE, 0, 0);
 					return 0;
 				}
+				break;
 			}
 
 			case WM_SIZE:
@@ -187,5 +184,18 @@ LRESULT CALLBACK WindowCallback (HWND windowHandle,
 		}
 		return DefWindowProc (windowHandle, msg, wparam, lparam);
 	}
-	_END_EXCEPTION_HANDLING (WIN_CALLBACK)
+	catch (ExceptionHandler_t& ex)
+	{
+		_MessageBox ("Exception occurred (WINDOW_CALLBACK)\nCheck \"ExceptionErrors.txt\"");
+		ex.WriteLog (__EXPN__);
+		system ("start ExceptionErrors.txt");
+	}
+	catch (std::exception err)
+	{
+		_MessageBox ("Exception occurred: %s\n", err.what ());
+	}
+	catch (...)
+	{
+		_MessageBox ("Exception occurred\n");
+	}
 }

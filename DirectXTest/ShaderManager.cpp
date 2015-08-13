@@ -30,21 +30,21 @@ Direct3DShaderManager::~Direct3DShaderManager ()
 	for (auto i = blobs_.begin ();
 			  i < blobs_.end ();
 			  i++)
-		(*i)->Release ();
+		if (*i) (*i)->Release ();
 
 	blobs_.clear ();
 
 	for (auto i = vertexShaders_.begin ();
 			  i < vertexShaders_.end ();
 			  i++)
-		(*i)->Release ();
+		if (*i) (*i)->Release ();
 
 	vertexShaders_.clear ();
 
 	for (auto i = pixelShaders_.begin ();
 			  i < pixelShaders_.end ();
 			  i++)
-		(*i)->Release ();
+		if (*i) (*i)->Release ();
 
 	pixelShaders_.clear ();
 
@@ -68,25 +68,25 @@ ShaderDesc_t Direct3DShaderManager::LoadShader (std::string filename,
 	blobs_.push_back (nullptr);
 	UINT nBlob = blobs_.size () - 1;
 
-	result = D3DX11CompileFromFileA (filename.c_str (), 
-									 0, 
-									 0, 
-									 function.c_str (), 
-									 "vs_4_0", 
-									 0, 
-									 0, 
-									 0, 
-									 &blobs_[nBlob], 
-									 0, 
-									 0);
-
-	if (result != S_OK)
-		_EXC_N (LOAD_SHADER_BLOB, "D3D: Failed to load shader (%s) from file (%s)" _ 
-				function.c_str () _ 
-				filename.c_str ())
-
 	if (shaderType == SHADER_VERTEX)
 	{
+		result = D3DX11CompileFromFileA (filename.c_str (),
+										 0,
+										 0,
+										 function.c_str (),
+										 "vs_4_0",
+										 0,
+										 0,
+										 0,
+										 &blobs_[nBlob],
+										 0,
+										 0);
+
+		if (result != S_OK)
+			_EXC_N (LOAD_SHADER_BLOB, "D3D: Failed to load vertex shader (%s) from file (%s)" _
+					function.c_str () _
+					filename.c_str ())
+
 		vertexShaders_.push_back (nullptr);
 		device->CreateVertexShader (blobs_[nBlob]->GetBufferPointer (), 
 									blobs_[nBlob]->GetBufferSize (), 
@@ -98,6 +98,22 @@ ShaderDesc_t Direct3DShaderManager::LoadShader (std::string filename,
 
 	if (shaderType == SHADER_PIXEL)
 	{
+		result = D3DX11CompileFromFileA (filename.c_str (),
+										 0,
+										 0,
+										 function.c_str (),
+										 "ps_4_0",
+										 0,
+										 0,
+										 0,
+										 &blobs_[nBlob],
+										 0,
+										 0);
+
+		if (result != S_OK)
+			_EXC_N (LOAD_SHADER_BLOB, "D3D: Failed to load pixel shader (%s) from file (%s)" _
+					function.c_str () _
+					filename.c_str ())
 		pixelShaders_.push_back (nullptr);
 		device->CreatePixelShader (blobs_[nBlob]->GetBufferPointer (),
 								   blobs_[nBlob]->GetBufferSize (),
