@@ -28,12 +28,22 @@ void Vertex_t::SetTexture (float u_,
 	w = w_;
 }
 
+void Vertex_t::SetColor (float r_,
+						 float g_,
+						 float b_)
+{
+	r = r_;
+	g = g_;
+	b = b_;
+}
+
 void Direct3DObject::ok ()
 {
 	DEFAULT_OK_BLOCK
 }
 
-Direct3DObject::Direct3DObject (D3D11_PRIMITIVE_TOPOLOGY topology,
+Direct3DObject::Direct3DObject (XMMATRIX& world,
+								D3D11_PRIMITIVE_TOPOLOGY topology,
 								bool drawIndexed) :
 	vertices_     (),
 	indices_      (),
@@ -42,10 +52,13 @@ Direct3DObject::Direct3DObject (D3D11_PRIMITIVE_TOPOLOGY topology,
 	objectId_     (),
 	alpha_        (0.0f),
 	objData_      ({ XMMatrixIdentity (), XMMatrixIdentity () }),
+	world_        (world_),
 	vertexBuffer_ (nullptr),
 	indexBuffer_  (nullptr),
 	objectBuffer_ (nullptr),
-	buffersSet_   (false)
+	buffersSet_   (false),
+	vertexShader_ ({ SHADER_NOT_SET }),
+	pixelShader_  ({ SHADER_NOT_SET })
 {
 
 }
@@ -160,12 +173,12 @@ void Direct3DObject::SetupBuffers (ID3D11Device* device)
 	END_EXCEPTION_HANDLING (SETUP_BUFFERS)
 }
 
-void Direct3DObject::SetWVP (double pad, XMMATRIX& matrix)
+void Direct3DObject::SetWVP (XMMATRIX& matrix)
 {
 	objData_.WVP = matrix;
 }
 
-void Direct3DObject::SetWorld (double pad, XMMATRIX& matrix)
+void Direct3DObject::SetWorld (XMMATRIX& matrix)
 {
 	objData_.World = matrix;
 }
@@ -181,7 +194,6 @@ XMMATRIX& Direct3DObject::GetWorld ()
 }
 
 void Direct3DObject::Draw (ID3D11DeviceContext* deviceContext, 
-						   XMMATRIX& world, 
 						   Direct3DCamera* cam)
 {
 	BEGIN_EXCEPTION_HANDLING
@@ -207,10 +219,10 @@ void Direct3DObject::Draw (ID3D11DeviceContext* deviceContext,
 			deviceContext->IASetIndexBuffer (indexBuffer_, DXGI_FORMAT_R32_UINT, 0);
 	}
 
-	XMMATRIX tempWVP = world * cam->GetView () * cam->GetProjection ();
+	XMMATRIX tempWVP = world_ * cam->GetView () * cam->GetProjection ();
 
 	objData_.WVP = XMMatrixTranspose (tempWVP);
-	objData_.World = XMMatrixTranspose (world);
+	objData_.World = XMMatrixTranspose (world_);
 
 	deviceContext->UpdateSubresource (objectBuffer_, 
 									  0, 
@@ -280,4 +292,24 @@ const XMMATRIX& Direct3DCamera::GetView ()
 const XMMATRIX& Direct3DCamera::GetProjection ()
 {
 	return projection_;
+}
+
+void Direct3DObject::AttachVertexShader (ShaderDesc_t desc)
+{
+	BEGIN_EXCEPTION_HANDLING
+	if (desc.type != SHADER_VERTEX)
+		_EXC_N (SHADER_TYPE, "D3D: Invalid shader type, cannot use as vertex shader (obj %d)" _
+				objectId_)
+	vertexShader_ = desc;
+	END_EXCEPTION_HANDLING (ATTACH_VERTEX_SHADER)
+}
+
+void Direct3DObject::AttachPixelShader (ShaderDesc_t desc)
+{
+	BEGIN_EXCEPTION_HANDLING
+	if (desc.type != SHADER_PIXEL)
+		_EXC_N (SHADER_TYPE, "D3D: Invalid shader type, cannot use as pixel shader (obj %d)" _
+				objectId_)
+	pixelShader_ = desc;
+	END_EXCEPTION_HANDLING (ATTACH_PIXEL_SHADER)
 }

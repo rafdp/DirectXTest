@@ -154,6 +154,7 @@
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Object.cpp" />
+    <ClCompile Include="ShaderManager.cpp" />
     <ClCompile Include="Support.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
@@ -161,6 +162,7 @@
     <ClInclude Include="Builder.h" />
     <ClInclude Include="Direct3DProcessor.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="ShaderManager.h" />
     <ClInclude Include="SharedDeclarations.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="includes.h" />

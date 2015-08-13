@@ -14,16 +14,20 @@ void Direct3DProcessor::ok ()
 
 Direct3DProcessor::Direct3DProcessor (WindowClass* wnd, uint8_t buffers)
 try :
-	swapChain_	        (nullptr),
-	device_             (nullptr),
-	deviceContext_      (nullptr),
-	wnd_                (wnd),
-	nBuffers_           (buffers),
-	currentBuffer_	    (nullptr),
-	depthBuffer_        (nullptr),
-	depthStencilView_   (nullptr),
-	depthStencilStates_ (),
-	rasterizerStates_   ()
+	swapChain_	         (nullptr),
+	device_              (nullptr),
+	deviceContext_       (nullptr),
+	wnd_                 (wnd),
+	nBuffers_            (buffers),
+	currentBuffer_	     (nullptr),
+	depthBuffer_         (nullptr),
+	depthStencilView_    (nullptr),
+	depthStencilStates_  (),
+	rasterizerStates_    (),
+	objects_             (),
+	shaderManager_       (),
+	currentVertexShader_ ({ SHADER_NOT_SET }),
+	currentPixelShader_  ({ SHADER_NOT_SET })
 {
 	if (wnd == nullptr)
 		_EXC_N (NULL_WND,
@@ -97,7 +101,14 @@ void Direct3DProcessor::ProcessDrawing (Direct3DCamera* cam)
 										   1.0f, 
 										   0);
 
-	//for (auto) TODO
+	for (auto i = objects_.begin ();
+			  i < objects_.end ();
+			  i++)
+	{
+		EnableShader ((*i)->vertexShader_);
+		EnableShader ((*i)->pixelShader_);
+		(*i)->Draw (deviceContext_, cam);
+	}
 	END_EXCEPTION_HANDLING (PROCESS_DRAWING)
 }
 
@@ -358,4 +369,48 @@ void Direct3DProcessor::ProcessObjects ()
 		      i++)
 		(*i)->SetupBuffers (device_);
 	END_EXCEPTION_HANDLING (PROCESS_OBJECTS)
+}
+
+ShaderDesc_t Direct3DProcessor::LoadShader (std::string filename,
+											std::string function,
+											SHADER_TYPES shaderType)
+{
+	return shaderManager_.LoadShader (filename, 
+									  function, 
+									  shaderType, 
+									  device_);
+}
+
+ID3D11VertexShader* Direct3DProcessor::GetVertexShader (ShaderDesc_t desc)
+{
+	return reinterpret_cast<ID3D11VertexShader*> (shaderManager_.GetShader (desc));
+}
+
+ID3D11PixelShader* Direct3DProcessor::GetPixelShader (ShaderDesc_t desc)
+{
+	return reinterpret_cast<ID3D11PixelShader*> (shaderManager_.GetShader (desc));
+}
+
+void Direct3DProcessor::EnableShader (ShaderDesc_t desc)
+{
+	BEGIN_EXCEPTION_HANDLING
+	if (desc.type != SHADER_VERTEX && desc.type != SHADER_PIXEL)
+		_EXC_N (SHADER_TYPE, "D3D: Invalid shader type")
+
+	if (desc.type == SHADER_VERTEX)
+	{
+		if (desc == currentVertexShader_) return;
+		currentVertexShader_ = desc;
+		deviceContext_->VSSetShader (GetVertexShader (desc), 0, 0);
+		return;
+	}
+
+	if (desc.type == SHADER_PIXEL)
+	{
+		if (desc == currentPixelShader_) return;
+		currentPixelShader_ = desc;
+		deviceContext_->PSSetShader (GetPixelShader (desc), 0, 0);
+		return;
+	}
+	END_EXCEPTION_HANDLING (ENABLE_SHADER)
 }

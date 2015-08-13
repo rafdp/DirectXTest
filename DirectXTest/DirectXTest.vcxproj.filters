@@ -33,6 +33,9 @@
     <ClCompile Include="Object.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
+    <ClCompile Include="ShaderManager.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Builder.h">
@@ -54,6 +57,9 @@
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="Object.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderManager.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
   </ItemGroup>

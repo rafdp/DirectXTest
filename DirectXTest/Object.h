@@ -32,7 +32,12 @@ class Vertex_t
 {
 	float x, y, z;
 	float nx, ny, nz;
-	float u, v, w;
+	union
+	{
+		struct { float u, v, w; };
+		struct { float r, g, b; };
+	};
+	
 
 	void SetPos (float x_, 
 				 float y_,
@@ -45,6 +50,10 @@ class Vertex_t
 	void SetTexture (float u_,
 					 float v_,
 					 float w_ = 0.0f);
+
+	void SetColor (float r_,
+				   float g_,
+				   float b_);
 };
 
 struct Direct3DObjectBuffer
@@ -61,11 +70,15 @@ class Direct3DObject : NZA_t
 	UINT objectId_;
 	float alpha_;
 	Direct3DObjectBuffer objData_;
+	XMMATRIX world_;
 
 	ID3D11Buffer* vertexBuffer_;
 	ID3D11Buffer* indexBuffer_;
 	ID3D11Buffer* objectBuffer_;
 	bool buffersSet_;
+
+	ShaderDesc_t vertexShader_;
+	ShaderDesc_t pixelShader_;
 
 	friend class Direct3DProcessor;
 
@@ -74,7 +87,8 @@ class Direct3DObject : NZA_t
 	void ok ();
 	
 public:
-	Direct3DObject (D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+	Direct3DObject (XMMATRIX& world,
+					D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 					bool drawIndexed = false);
 	~Direct3DObject ();
 
@@ -86,13 +100,15 @@ public:
 
 	void SetupBuffers (ID3D11Device* device);
 
-	void SetWVP (double pad, XMMATRIX& matrix);
-	void SetWorld (double pad, XMMATRIX& matrix);
+	void SetWVP (XMMATRIX& matrix);
+	void SetWorld (XMMATRIX& matrix);
 	XMMATRIX& GetWVP ();
 	XMMATRIX& GetWorld ();
 
 	void Draw (ID3D11DeviceContext* deviceContext,
-			   XMMATRIX& world,
 			   Direct3DCamera* cam);
+
+	void AttachVertexShader (ShaderDesc_t desc);
+	void AttachPixelShader  (ShaderDesc_t desc);
 
 };

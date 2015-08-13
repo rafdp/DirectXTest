@@ -4,6 +4,6 @@
 
 #include "Exception.h"
 #include "Window.h"
+#include "ShaderManager.h"
 #include "Object.h"
 #include "Direct3DProcessor.h"
-

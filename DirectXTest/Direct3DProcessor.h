@@ -19,11 +19,15 @@ class Direct3DProcessor : NZA_t
 	std::vector<ID3D11DepthStencilState*> depthStencilStates_;
 	std::vector<ID3D11RasterizerState*>   rasterizerStates_;
 
-	std::vector<Direct3DObject*>          objects_;
+	std::vector<Direct3DObject*> objects_;
+	Direct3DShaderManager        shaderManager_;
+	ShaderDesc_t				 currentVertexShader_;
+	ShaderDesc_t                 currentPixelShader_;
 
 	void InitDeviceAndSwapChain ();
 	void InitViewport ();
 	void InitDepthStencilView ();
+	void EnableShader (ShaderDesc_t desc);
 	
 
 public:
@@ -49,4 +53,10 @@ public:
 
 	void ProcessObjects ();
 
+	ShaderDesc_t LoadShader (std::string filename, 
+							 std::string function,
+							 SHADER_TYPES shaderType);
+
+	ID3D11VertexShader* GetVertexShader (ShaderDesc_t desc);
+	ID3D11PixelShader*  GetPixelShader  (ShaderDesc_t desc);
 };
