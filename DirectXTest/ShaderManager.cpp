@@ -140,3 +140,17 @@ void** Direct3DShaderManager::GetShader (ShaderDesc_t desc)
 
 	END_EXCEPTION_HANDLING (GET_VERTEX_SHADER)
 }
+
+
+ID3D10Blob* Direct3DShaderManager::GetBlob (ShaderDesc_t desc)
+{
+	BEGIN_EXCEPTION_HANDLING
+
+	if (desc.blobIndex >= blobs_.size () ||
+		blobs_[desc.blobIndex] == nullptr)
+		_EXC_N (BLOB_INDEX, "D3D: Invalid blob index")
+
+		return blobs_[desc.blobIndex];
+
+	END_EXCEPTION_HANDLING (GET_BLOB)
+}

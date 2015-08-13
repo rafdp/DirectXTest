@@ -235,6 +235,13 @@ void Direct3DObject::Draw (ID3D11DeviceContext* deviceContext,
 										 1, 
 										 &objectBuffer_);
 
+	deviceContext->IASetPrimitiveTopology (topology_);
+
+	if (drawIndexed_)
+		deviceContext->DrawIndexed (indices_.size (), 0, 0);
+	else
+		deviceContext->Draw (vertices_.size (), 0);
+
 	END_EXCEPTION_HANDLING (DRAW_OBJECT)
 
 }

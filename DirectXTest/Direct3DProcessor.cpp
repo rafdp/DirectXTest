@@ -24,6 +24,7 @@ try :
 	depthStencilView_    (nullptr),
 	depthStencilStates_  (),
 	rasterizerStates_    (),
+	layouts_             (),
 	objects_             (),
 	shaderManager_       (),
 	currentVertexShader_ ({ SHADER_NOT_SET }),
@@ -413,4 +414,74 @@ void Direct3DProcessor::EnableShader (ShaderDesc_t desc)
 		return;
 	}
 	END_EXCEPTION_HANDLING (ENABLE_SHADER)
+}
+
+UINT Direct3DProcessor::AddLayout (ShaderDesc_t desc,
+								   bool position,
+								   bool normal,
+ 								   bool texture,
+	 							   bool color)
+{
+	BEGIN_EXCEPTION_HANDLING
+
+	if (desc.type != SHADER_VERTEX)
+		_EXC_N (SHADER_TYPE, "D3D: Unable to create layout, invalid shader type")
+
+	std::vector<D3D11_INPUT_ELEMENT_DESC> inputElements;
+	if (position)
+		inputElements.push_back ({ "POSITION", 
+								   0, 
+								   DXGI_FORMAT_R32G32B32_FLOAT, 
+								   0, 
+								   offsetof (Vertex_t, x), 
+								   D3D11_INPUT_PER_VERTEX_DATA, 
+								   0 });
+
+	if (normal)
+		inputElements.push_back ({ "NORMAL",
+								   0,
+								   DXGI_FORMAT_R32G32B32_FLOAT,
+								   0,
+								   offsetof (Vertex_t, nx),
+								   D3D11_INPUT_PER_VERTEX_DATA,
+								   0 });
+	
+	if (texture & !color)
+		inputElements.push_back ({ "TEXCOORD",
+								   0,
+								   DXGI_FORMAT_R32G32_FLOAT,
+								   0,
+								   offsetof (Vertex_t, u),
+								   D3D11_INPUT_PER_VERTEX_DATA,
+								   0 });
+	if (texture & !color)
+		inputElements.push_back ({ "COLOR",
+								   0,
+								   DXGI_FORMAT_R32G32B32_FLOAT,
+								   0,
+								   offsetof (Vertex_t, r),
+								   D3D11_INPUT_PER_VERTEX_DATA,
+								   0 });
+	HRESULT result = S_OK;
+	layouts_.push_back (nullptr);
+
+	result = device_->CreateInputLayout (inputElements.data (),
+										 inputElements.size (),
+										 shaderManager_.GetBlob (desc)->GetBufferPointer (),
+										 shaderManager_.GetBlob (desc)->GetBufferSize (),
+										 &layouts_.back ());
+
+	END_EXCEPTION_HANDLING (ADD_LAYOUT)
+}
+
+void Direct3DProcessor::EnableLayout (UINT n)
+{
+	BEGIN_EXCEPTION_HANDLING
+
+	if (n >= layouts_.size ())
+		_EXC_N (LAYOUT_INDEX, "D3D: Invalid layout index")
+
+	deviceContext_->IASetInputLayout (layouts_[n]);
+
+	END_EXCEPTION_HANDLING (ENABLE_LAYOUT)
 }

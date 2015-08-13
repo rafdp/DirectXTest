@@ -18,6 +18,7 @@ class Direct3DProcessor : NZA_t
 
 	std::vector<ID3D11DepthStencilState*> depthStencilStates_;
 	std::vector<ID3D11RasterizerState*>   rasterizerStates_;
+	std::vector<ID3D11InputLayout*>       layouts_;
 
 	std::vector<Direct3DObject*> objects_;
 	Direct3DShaderManager        shaderManager_;
@@ -59,4 +60,12 @@ public:
 
 	ID3D11VertexShader* GetVertexShader (ShaderDesc_t desc);
 	ID3D11PixelShader*  GetPixelShader  (ShaderDesc_t desc);
+
+	UINT AddLayout (ShaderDesc_t desc,
+					bool position = false,
+					bool normal = false,
+					bool texture = false,
+					bool color = false);
+
+	void EnableLayout (UINT n);
 };

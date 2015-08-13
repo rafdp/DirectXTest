@@ -28,15 +28,12 @@ public:
 	const XMMATRIX& GetProjection ();
 };
 
-class Vertex_t
+struct Vertex_t
 {
 	float x, y, z;
 	float nx, ny, nz;
-	union
-	{
-		struct { float u, v, w; };
-		struct { float r, g, b; };
-	};
+	float u, v, w;
+	float r, g, b;
 	
 
 	void SetPos (float x_, 

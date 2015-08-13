@@ -37,4 +37,5 @@ public:
 							 ID3D11Device* device);
 
 	void** GetShader (ShaderDesc_t desc);
+	ID3D10Blob* GetBlob (ShaderDesc_t desc);
 };
