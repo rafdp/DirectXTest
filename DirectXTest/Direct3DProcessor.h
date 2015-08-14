@@ -26,6 +26,8 @@ class Direct3DProcessor : NZA_t
 	ShaderDesc_t				 currentVertexShader_;
 	ShaderDesc_t                 currentPixelShader_;
 
+	Direct3DConstantBufferManager cbManager_;
+
 	void InitDeviceAndSwapChain ();
 	void InitViewport ();
 	void InitDepthStencilView ();
@@ -74,4 +76,11 @@ public:
 
 	void EnableLayout (UINT n);
 	void SetLayout (Direct3DObject* obj, UINT n);
+
+	UINT RegisterConstantBuffer (void* data,
+							     size_t size,
+							     UINT slot);
+	void UpdateConstantBuffer (UINT n);
+	void SendCBToVS (UINT n);
+	void SendCBToPS (UINT n);
 };

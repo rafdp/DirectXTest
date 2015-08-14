@@ -27,12 +27,11 @@ public:
 	const XMMATRIX& GetView ();
 	const XMMATRIX& GetProjection ();
 };
-
 struct Vertex_t
 {
 	float x, y, z;
-	float nx, ny, nz;
-	float u, v, w;
+	//float nx, ny, nz;
+	//float u, v, w;
 	float r, g, b, a;
 	
 
@@ -40,40 +39,41 @@ struct Vertex_t
 				 float y_,
 				 float z_);
 
-	void SetNormal (float nx_,
+	/*void SetNormal (float nx_,
 				    float ny_,
 				    float nz_);
 
 	void SetTexture (float u_,
 					 float v_,
-					 float w_ = 0.0f);
+					 float w_ = 0.0f);*/
 
 	void SetColor (float r_,
 				   float g_,
 				   float b_,
 				   float a_ = 0.0f);
 };
-
 struct Direct3DObjectBuffer
 {
-	XMMATRIX WVP, World;
+	XMMATRIX WVP;
+	XMMATRIX World;
 };
-
 class Direct3DObject : NZA_t
 {
+	bool drawIndexed_;
+	Direct3DObjectBuffer objData_;
+	XMMATRIX world_;
 	std::vector<Vertex_t> vertices_;
 	std::vector<UINT> indices_;
 	D3D11_PRIMITIVE_TOPOLOGY topology_;
-	bool drawIndexed_;
-	UINT objectId_;
 	bool blending_;
-	Direct3DObjectBuffer objData_;
-	XMMATRIX world_;
+	UINT objectId_;
 
 	ID3D11Buffer* vertexBuffer_;
 	ID3D11Buffer* indexBuffer_;
-	ID3D11Buffer* objectBuffer_;
+	Direct3DConstantBufferManager* cbManager_;
+	UINT objectBufferN_;
 	bool buffersSet_;
+	bool objectBufferSet_;
 
 	ShaderDesc_t vertexShader_;
 	ShaderDesc_t pixelShader_;
@@ -86,6 +86,8 @@ class Direct3DObject : NZA_t
 	void ok ();
 
 	void SaveLayout (UINT n);
+
+	void SetCBManager (Direct3DConstantBufferManager* cbManager);
 	
 public:
 	Direct3DObject (XMMATRIX& world, 
@@ -112,4 +114,8 @@ public:
 	void AttachVertexShader (ShaderDesc_t desc);
 	void AttachPixelShader  (ShaderDesc_t desc);
 
+	void ClearBuffers ();
+	void SetVertexBuffer (ID3D11Device* device);
+	void SetIndexBuffer  (ID3D11Device* device);
+	void SetObjectBuffer (ID3D11Device* device);
 };

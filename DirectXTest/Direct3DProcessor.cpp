@@ -31,7 +31,8 @@ try :
 	objects_             (),
 	shaderManager_       (),
 	currentVertexShader_ ({ SHADER_NOT_SET }),
-	currentPixelShader_  ({ SHADER_NOT_SET })
+	currentPixelShader_  ({ SHADER_NOT_SET }),
+	cbManager_           ()
 {
 	if (wnd == nullptr)
 		_EXC_N (NULL_WND,
@@ -40,10 +41,9 @@ try :
 	InitViewport ();
 	InitDepthStencilView ();
 	ApplyDepthStencilState (AddDepthStencilState ());
-	ApplyRasterizerState   (AddRasterizerState   (true));
+	ApplyRasterizerState   (AddRasterizerState   (true, false, true));
 	AddRasterizerState   (false);
 	ApplyBlendState (AddBlendState ());
-
 
 
 }
@@ -88,8 +88,8 @@ void Direct3DProcessor::ProcessDrawing (Direct3DCamera* cam)
 	BEGIN_EXCEPTION_HANDLING
 	deviceContext_->ClearRenderTargetView (currentBuffer_,
 										   D3DXCOLOR (0.0f, 
-													  0.1f, 
-													  0.2f, 
+													  0.05f, 
+													  0.05f, 
 													  0.0f));
 
 	deviceContext_->ClearDepthStencilView (depthStencilView_, 
@@ -97,13 +97,17 @@ void Direct3DProcessor::ProcessDrawing (Direct3DCamera* cam)
 										   D3D11_CLEAR_STENCIL, 
 										   1.0f, 
 										   0);
-
+	static bool once = false;
 	for (auto i = objects_.begin ();
 			  i < objects_.end ();
 			  i++)
 	{
-		EnableShader ((*i)->vertexShader_);
-		EnableShader ((*i)->pixelShader_);
+		if (!once)
+		{
+			EnableShader ((*i)->vertexShader_);
+			EnableShader ((*i)->pixelShader_);
+			//once = true;
+		}
 		if ((*i)->blending_)
 		{
 			ApplyRasterizerState (1);
@@ -253,8 +257,8 @@ void Direct3DProcessor::InitViewport ()
 	D3D11_VIEWPORT viewport = {};
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
-	viewport.Width = wnd_->width ();
-	viewport.Height = wnd_->height ();
+	viewport.Width =  (float) wnd_->width ();
+	viewport.Height = (float) wnd_->height ();
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 
@@ -409,6 +413,7 @@ void Direct3DProcessor::RegisterObject (Direct3DObject* obj)
 
 	obj->SetID (objects_.size ());
 	objects_.push_back (obj);
+	obj->SetCBManager (&cbManager_);
 
 	END_EXCEPTION_HANDLING (REGISTER_OBJECT)
 }
@@ -492,7 +497,7 @@ UINT Direct3DProcessor::AddLayout (ShaderDesc_t desc,
 								   offsetof (Vertex_t, x), 
 								   D3D11_INPUT_PER_VERTEX_DATA, 
 								   0 });
-
+	/*
 	if (normal)
 		inputElements.push_back ({ "NORMAL",
 								   0,
@@ -500,8 +505,8 @@ UINT Direct3DProcessor::AddLayout (ShaderDesc_t desc,
 								   0,
 								   offsetof (Vertex_t, nx),
 								   D3D11_INPUT_PER_VERTEX_DATA,
-								   0 });
-	
+								   0 });*/
+	/*
 	if (texture & !color)
 		inputElements.push_back ({ "TEXCOORD",
 								   0,
@@ -509,7 +514,7 @@ UINT Direct3DProcessor::AddLayout (ShaderDesc_t desc,
 								   0,
 								   offsetof (Vertex_t, u),
 								   D3D11_INPUT_PER_VERTEX_DATA,
-								   0 });
+								   0 });*/
 	if (!texture & color)
 		inputElements.push_back ({ "COLOR",
 								   0,
@@ -563,4 +568,26 @@ void Direct3DProcessor::SetLayout (Direct3DObject* obj, UINT n)
 				obj->objectId_);
 	obj->SaveLayout (n);
 	END_EXCEPTION_HANDLING (SET_LAYOUT)
+}
+
+UINT Direct3DProcessor::RegisterConstantBuffer (void* data,
+							 size_t size,
+							 UINT slot)
+{
+	BEGIN_EXCEPTION_HANDLING
+	return cbManager_.Bind (data, size, slot, device_);
+	END_EXCEPTION_HANDLING (REGISTER_CONSTANT_BUFFER)
+}
+
+void Direct3DProcessor::UpdateConstantBuffer (UINT n)
+{
+	cbManager_.Update (n, deviceContext_);
+}
+void Direct3DProcessor::SendCBToVS (UINT n)
+{
+	cbManager_.SendVSBuffer (n, deviceContext_);
+}
+void Direct3DProcessor::SendCBToPS (UINT n)
+{
+	cbManager_.SendPSBuffer (n, deviceContext_);
 }

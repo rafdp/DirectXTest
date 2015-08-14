@@ -36,6 +36,15 @@
     <ClCompile Include="ShaderManager.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
+    <ClCompile Include="TimerSimple.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleSystem.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstantBufferManager.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Builder.h">
@@ -60,6 +69,15 @@
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="ShaderManager.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="TimerSimple.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleSystem.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstantBufferManager.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
   </ItemGroup>

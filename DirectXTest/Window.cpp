@@ -20,14 +20,12 @@ _END_EXCEPTION_HANDLING (CTOR)
 
 WindowClass::~WindowClass ()
 {
-	BEGIN_EXCEPTION_HANDLING
 	if (hwnd_ && running_)
 	{
 		Destroy ();
 		SendNotifyMessage (hwnd_, WM_DESTROY, 0, 100500);
 	}
 
-	END_EXCEPTION_HANDLING (DTOR)
 }
 
 void WindowClass::RegisterApplication ()
@@ -77,10 +75,10 @@ void WindowClass::CreateWin32Window ()
 {
 	BEGIN_EXCEPTION_HANDLING
 
-	RECT windowRect = { (SCREEN_WIDTH  - size_.cx) / 2,
-						(SCREEN_HEIGHT - size_.cy) / 2,
-						(SCREEN_WIDTH  + size_.cx) / 2,
-						(SCREEN_HEIGHT + size_.cy) / 2 };
+	RECT windowRect = { (LONG)(SCREEN_WIDTH  - size_.cx) / 2,
+					    (LONG)(SCREEN_HEIGHT - size_.cy) / 2,
+						(LONG)(SCREEN_WIDTH  + size_.cx) / 2,
+						(LONG)(SCREEN_HEIGHT + size_.cy) / 2 };
 	AdjustWindowRect (&windowRect, style_, false);
 
 

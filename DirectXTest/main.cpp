@@ -4,6 +4,16 @@ ExceptionData_t* __EXPN__ = nullptr;
 
 Direct3DObject* GetCube (Direct3DProcessor* proc);
 void GetParticles (Direct3DProcessor* proc);
+Direct3DObject* GetParticles_ (Direct3DProcessor* proc);
+
+struct CBData
+{
+	XMFLOAT4 color;
+	XMFLOAT4 point;
+	XMFLOAT4 vector;
+	float min;
+	float pad[3];
+};
 
 int WINAPI WinMain (HINSTANCE hInstance,
 					HINSTANCE legacy,
@@ -12,26 +22,87 @@ int WINAPI WinMain (HINSTANCE hInstance,
 {
 	__EXPN__ = new ExceptionData_t (20, "ExceptionErrors.txt");
 
-	srand (time (NULL));
+	srand (static_cast<time_t>(time (NULL)));
+	AllocConsole ();
+	FILE* file = nullptr;
+	freopen_s (&file, "CONOUT$", "w", stdout);
+	//printf ("Hello world");
+	double time = 0.0;
+	int frames = 0;
+	Timer t;
 
 	try
 	{
+		printf ("Loading particles...\n");
+		ParticleSystem ps (-1.0f, 1.0f,
+						   -1.0f, 1.0f,
+						   -1.0f, 1.0f,
+						   500000, 1.0f,
+						   0.2f, 0.6f, 0.9f, 0.1f,
+						   0.01f);
+		printf ("Particles loaded\n");
 		WindowClass window (1200, 800);
+		//SetStdHandle (STD_OUTPUT_HANDLE, );
 		Direct3DProcessor d3dProc (&window);
 		Direct3DCamera cam (&window,
 							0.0f, 3.0f, 8.0f,
 							0.0f, 0.0f, 0.0f,
-							0.0, 1.0f, 0.0f);
+							0.0, 1.0f, 0.0f,
+							0.15f);
+		Direct3DObject* obj = GetCube (&d3dProc);
 
-		GetParticles (&d3dProc);
+		CBData passToShader = 
+		{ 
+			{ 1.0f, 0.0f, 0.0f, 0.5f },
+			{ 1.0f, 1.0f, 1.0f, 1.0f },
+			{ 1.0f, 1.0f, 1.0f, 0.0f },
+			{ 0.1f }
+		};
+
+		UINT cbN = d3dProc.RegisterConstantBuffer (&passToShader, 
+												   sizeof (CBData), 
+												   8);
+		d3dProc.UpdateConstantBuffer (cbN);
+
+		XMMATRIX world = XMMatrixTranslation (0.0f, 0.0f, 0.0f);
+
+		Direct3DObject* particles = new Direct3DObject (world, true);
+		d3dProc.ApplyBlendState (d3dProc.AddBlendState (true));
+
+		/*ps.ApplyRay (1.0f, 0.0f, 0.0f, 
+					 3.0f, 4.0f, 3.0f,
+					 -3.0f, -4.0f, -2.25f,
+					 0.05f);*/
+
+		ps.DumpToObject (particles);
+		d3dProc.RegisterObject (particles);
+
+		ShaderDesc_t vertS = d3dProc.LoadShader ("shaders.hlsl",
+											   "VShader",
+											   SHADER_VERTEX);
+
+		ShaderDesc_t pixS = d3dProc.LoadShader ("shaders.hlsl",
+											  "PShader",
+											  SHADER_PIXEL);
+
+		particles->AttachVertexShader (vertS);
+		particles->AttachPixelShader (pixS);
+
+
+		d3dProc.EnableLayout (d3dProc.AddLayout (vertS, true, false, false, true));
+
+		/*Direct3DObject* obj = GetParticles_ (&d3dProc);
+		Direct3DObject* cube = GetCube (&d3dProc);*/
 
 		d3dProc.ProcessObjects ();
-		//d3dProc.LockShader ();
 		cam.Update ();
 
+		
+		_MessageBox ("%x\n%x", &obj->GetWorld (), &particles->GetWorld ());
 		MSG msg = {};
 		while (true)
 		{
+			t.start ();
 			if (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
 			{
 				TranslateMessage (&msg);
@@ -40,11 +111,23 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				if (msg.message == WM_QUIT) break;
 			}
 			// SCENE PROCESSING
-			
+
+
+			obj->GetWorld () = particles->GetWorld () *= XMMatrixRotationX (0.005f) * XMMatrixRotationY (0.01f) * XMMatrixRotationZ (0.015f);
+			d3dProc.SendCBToVS (cbN);
 			d3dProc.ProcessDrawing (&cam);
 			d3dProc.Present ();
-
+			t.stop ();
+			frames++;
+			time += t.GetElapsedTime ("mks");
+			if (time >= 500000.0)
+			{
+				printf ("\r%d     ", frames * 2);
+				time = 0.0;
+				frames = 0;
+			}
 		}
+		FreeConsole ();
 	}
 	catch (ExceptionHandler_t& ex)
 	{
@@ -71,8 +154,10 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 {
 	XMMATRIX world = XMMatrixTranslation (0.0f, 0.0f, 0.0f);
 
-	Direct3DObject* cube = new Direct3DObject (world, 
-											   true, true, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	Direct3DObject* cube = new Direct3DObject (world,
+											   false, 
+											   true, 
+											   D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
 
 	Vertex_t vertices[] =
 	{
@@ -181,7 +266,7 @@ void GetParticles (Direct3DProcessor* proc)
 	proc->EnableLayout (n);
 	float d = 0;
 
-	for (int i = 0; i < 30000; i++)
+	for (int i = 0; i < 200; i++)
 	{
 		x = (rand () % 1000 - 500.0f) / 150.0f;
 		y = (rand () % 1000 - 500.0f) / 150.0f;
@@ -211,4 +296,72 @@ void GetParticles (Direct3DProcessor* proc)
 	}
 
 	proc->ApplyBlendState (proc->AddBlendState (true));
+}
+
+
+Direct3DObject* GetParticles_ (Direct3DProcessor* proc)
+{
+	XMMATRIX world = XMMatrixTranslation (0.0f, 0.0f, 0.0f);
+
+	float x = 0.0f;
+	float y = 0.0f;
+	float z = 0.0f;
+
+	Direct3DObject* particle = new Direct3DObject (world, true, false);
+
+	std::vector<Vertex_t> vertices;
+	std::vector<Vertex_t> indices;
+	ShaderDesc_t vertS = proc->LoadShader ("shaders.hlsl",
+										   "VShader",
+										   SHADER_VERTEX);
+
+	ShaderDesc_t pixS = proc->LoadShader ("shaders.hlsl",
+										  "PShader",
+										  SHADER_PIXEL);
+
+	UINT n = proc->AddLayout (vertS, true, false, false, true);
+
+	Vertex_t vertsC[3] = {};
+
+	proc->EnableLayout (n);
+	float d = 0;
+
+	for (int i = 0; i < 100000; i++)
+	{
+		x = (rand () % 1000 - 500.0f) / 500.0f;
+		y = (rand () % 1000 - 500.0f) / 500.0f;
+		z = (rand () % 1000 - 500.0f) / 500.0f;
+
+		d = rand () * 0.03f / RAND_MAX;
+
+		
+
+		vertsC[0].SetPos (x - d, 
+						  y - d, 
+						  z);
+		vertsC[0].SetColor (0.82f + rand () * 0.01f / RAND_MAX,
+							0.94f + rand () * 0.01f / RAND_MAX,
+							1.0f - rand () * 0.01f / RAND_MAX,
+							0.1f);
+
+		vertsC[1] = vertsC[0];
+		vertsC[1].y = y + d;
+
+		vertsC[2] = vertsC[1];
+		vertsC[2].x = x + d;
+
+		vertices.push_back (vertsC[0]);
+		vertices.push_back (vertsC[1]);
+		vertices.push_back (vertsC[2]);
+
+	}
+	particle->AddVertexArray (vertices.data (), vertices.size ());
+	proc->SetLayout (particle, n);
+	proc->RegisterObject (particle);
+
+	particle->AttachVertexShader (vertS);
+	particle->AttachPixelShader (pixS);
+
+	proc->ApplyBlendState (proc->AddBlendState (true));
+	return particle;
 }
