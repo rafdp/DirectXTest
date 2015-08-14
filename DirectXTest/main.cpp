@@ -6,6 +6,8 @@ Direct3DObject* GetCube (Direct3DProcessor* proc);
 void GetParticles (Direct3DProcessor* proc);
 Direct3DObject* GetParticles_ (Direct3DProcessor* proc);
 
+
+
 struct CBData
 {
 	XMFLOAT4 color;
@@ -22,7 +24,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 {
 	__EXPN__ = new ExceptionData_t (20, "ExceptionErrors.txt");
 
-	srand (static_cast<time_t>(time (NULL)));
+	srand (static_cast<UINT>(time (NULL)));
 	AllocConsole ();
 	FILE* file = nullptr;
 	freopen_s (&file, "CONOUT$", "w", stdout);
@@ -37,11 +39,11 @@ int WINAPI WinMain (HINSTANCE hInstance,
 		ParticleSystem ps (-1.0f, 1.0f,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
-						   500000, 1.0f,
-						   0.2f, 0.6f, 0.9f, 0.1f,
+						   4000000, 0.3f,
+						   1.0f, 1.0f, 1.0f, 0.3f,
 						   0.01f);
 		printf ("Particles loaded\n");
-		WindowClass window (1200, 800);
+		WindowClass window (1800, 1200);
 		//SetStdHandle (STD_OUTPUT_HANDLE, );
 		Direct3DProcessor d3dProc (&window);
 		Direct3DCamera cam (&window,
@@ -51,11 +53,11 @@ int WINAPI WinMain (HINSTANCE hInstance,
 							0.15f);
 		Direct3DObject* obj = GetCube (&d3dProc);
 
-		CBData passToShader = 
-		{ 
-			{ 1.0f, 0.0f, 0.0f, 0.5f },
-			{ 1.0f, 1.0f, 1.0f, 1.0f },
-			{ 1.0f, 1.0f, 1.0f, 0.0f },
+		CBData passToShader =
+		{
+			{ 1.0f, 0.0f, 0.0f, 0.6f },
+			{3.0f, 4.0f, 3.0f, 1.0f},
+			{-3.0f, -4.0f, -2.25f, 0.0f },
 			{ 0.1f }
 		};
 
@@ -66,7 +68,9 @@ int WINAPI WinMain (HINSTANCE hInstance,
 
 		XMMATRIX world = XMMatrixTranslation (0.0f, 0.0f, 0.0f);
 
-		Direct3DObject* particles = new Direct3DObject (world, true);
+
+		Direct3DObject* particles = new (GetValidObjectPtr ()) Direct3DObject (world, true);
+
 		d3dProc.ApplyBlendState (d3dProc.AddBlendState (true));
 
 		/*ps.ApplyRay (1.0f, 0.0f, 0.0f, 
@@ -98,7 +102,6 @@ int WINAPI WinMain (HINSTANCE hInstance,
 		cam.Update ();
 
 		
-		_MessageBox ("%x\n%x", &obj->GetWorld (), &particles->GetWorld ());
 		MSG msg = {};
 		while (true)
 		{
@@ -154,7 +157,8 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 {
 	XMMATRIX world = XMMatrixTranslation (0.0f, 0.0f, 0.0f);
 
-	Direct3DObject* cube = new Direct3DObject (world,
+	Direct3DObject* cube = new (GetValidObjectPtr ())
+							   Direct3DObject (world,
 											   false, 
 											   true, 
 											   D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
@@ -285,7 +289,7 @@ void GetParticles (Direct3DProcessor* proc)
 		vertices[2] = vertices[1];
 		vertices[2].x = x + d;
 
-		Direct3DObject* particle = new Direct3DObject (world, true, true);
+		Direct3DObject* particle = new (GetValidObjectPtr ()) Direct3DObject (world, true, true);
 		particle->AddVertexArray (vertices, 3);
 		particle->AddIndexArray (indices, 3);
 
@@ -307,7 +311,7 @@ Direct3DObject* GetParticles_ (Direct3DProcessor* proc)
 	float y = 0.0f;
 	float z = 0.0f;
 
-	Direct3DObject* particle = new Direct3DObject (world, true, false);
+	Direct3DObject* particle = new (GetValidObjectPtr ()) Direct3DObject (world, true, false);
 
 	std::vector<Vertex_t> vertices;
 	std::vector<Vertex_t> indices;

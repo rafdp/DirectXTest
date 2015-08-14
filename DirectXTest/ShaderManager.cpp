@@ -122,6 +122,8 @@ ShaderDesc_t Direct3DShaderManager::LoadShader (std::string filename,
 		return { SHADER_PIXEL, nBlob, static_cast <UINT> (pixelShaders_.size () - 1) };
 
 	}
+	_EXC_N (SHADER_TYPE, "D3D: Invalid shader type, cannot load")
+	return {};
 	END_EXCEPTION_HANDLING (LOAD_SHADER)
 }
 
@@ -153,6 +155,9 @@ void** Direct3DShaderManager::GetShader (ShaderDesc_t desc)
 
 			return reinterpret_cast<void**> (pixelShaders_[desc.index]);
 	}
+
+	_EXC_N (SHADER_TYPE, "D3D: Invalid shader type")
+	return nullptr;
 
 	END_EXCEPTION_HANDLING (GET_VERTEX_SHADER)
 }

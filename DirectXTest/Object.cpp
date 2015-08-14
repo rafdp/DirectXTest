@@ -54,8 +54,7 @@ Direct3DObject::Direct3DObject (XMMATRIX& world,
 	drawIndexed_     (drawIndexed),
 	objectId_        (),
 	blending_        (blending),
-	objData_         ({ XMMatrixIdentity (), XMMatrixIdentity () }),
-	world_           (world),
+	currM_           ({ { XMMatrixIdentity (), XMMatrixIdentity () } , world }),
 	vertexBuffer_    (nullptr),
 	indexBuffer_     (nullptr),
 	cbManager_       (nullptr),
@@ -131,17 +130,17 @@ void Direct3DObject::SetupBuffers (ID3D11Device* device)
 
 void Direct3DObject::SetWVP (XMMATRIX& matrix)
 {
-	objData_.WVP = matrix;
+	currM_.objData_.WVP = matrix;
 }
 
 void Direct3DObject::SetWorld (XMMATRIX& matrix)
 {
-	objData_.World = matrix;
+	currM_.objData_.World = matrix;
 }
 
 XMMATRIX& Direct3DObject::GetWorld ()
 {
-	return world_;
+	return currM_.world_;
 }
 
 void Direct3DObject::Draw (ID3D11DeviceContext* deviceContext, 
@@ -170,10 +169,10 @@ void Direct3DObject::Draw (ID3D11DeviceContext* deviceContext,
 					objectId_)
 			deviceContext->IASetIndexBuffer (indexBuffer_, DXGI_FORMAT_R32_UINT, 0);
 	}
-	XMMATRIX tempWVP = world_ * cam->GetView () * cam->GetProjection ();
+	XMMATRIX tempWVP = currM_.world_ * cam->GetView () * cam->GetProjection ();
 
-	objData_.WVP   = XMMatrixTranspose (tempWVP);
-	objData_.World = XMMatrixTranspose (world_);
+	currM_.objData_.WVP   = XMMatrixTranspose (tempWVP);
+	currM_.objData_.World = XMMatrixTranspose (currM_.world_);
 
 	cbManager_->Update (objectBufferN_, deviceContext);
 	cbManager_->SendVSBuffer (objectBufferN_, deviceContext);
@@ -312,7 +311,7 @@ void Direct3DObject::SetObjectBuffer (ID3D11Device* device)
 		_EXC_N (OBJECT_BUFFER_SET, "D3D: Object buffer has already been set (obj %d)" _ objectId_)
 	
 	
-	objectBufferN_ = cbManager_->Bind (&objData_, 
+	objectBufferN_ = cbManager_->Bind (&currM_.objData_,
 									   sizeof (Direct3DObjectBuffer), 
 									   0, 
 									   device);
@@ -375,4 +374,10 @@ const XMMATRIX& Direct3DCamera::GetView ()
 const XMMATRIX& Direct3DCamera::GetProjection ()
 {
 	return projection_;
+}
+
+
+void* GetValidObjectPtr ()
+{
+	return _aligned_malloc (sizeof (Direct3DObject), 16);
 }

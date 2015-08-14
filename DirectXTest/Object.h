@@ -57,13 +57,21 @@ struct Direct3DObjectBuffer
 	XMMATRIX WVP;
 	XMMATRIX World;
 };
+
+__declspec (align (16))
+struct CurrentMatrices
+{
+	Direct3DObjectBuffer objData_;
+	XMMATRIX world_;
+};
+
+__declspec (align (16))
 class Direct3DObject : NZA_t
 {
 	bool drawIndexed_;
-	Direct3DObjectBuffer objData_;
-	XMMATRIX world_;
 	std::vector<Vertex_t> vertices_;
 	std::vector<UINT> indices_;
+	CurrentMatrices currM_;
 	D3D11_PRIMITIVE_TOPOLOGY topology_;
 	bool blending_;
 	UINT objectId_;
@@ -119,3 +127,6 @@ public:
 	void SetIndexBuffer  (ID3D11Device* device);
 	void SetObjectBuffer (ID3D11Device* device);
 };
+
+
+void* GetValidObjectPtr ();

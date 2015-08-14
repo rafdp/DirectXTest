@@ -29,7 +29,7 @@ VS_OUTPUT VShader (float4 inPos : POSITION, float4 inColor : COLOR)
 
 	float d = length (cross (m0m1, Direction.xyz)) / length (Direction.xyz);
 
-	if (d < Min) output.color = Color;
+	if (d < Min) output.color = Color * (1.0f - d / Min);
 	else output.color = inColor * 0.5f;
 
 	output.position = mul (inPos, WVP);

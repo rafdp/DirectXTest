@@ -74,7 +74,7 @@ Direct3DProcessor::~Direct3DProcessor ()
 		for (auto i = objects_.begin ();
 				  i < objects_.end ();
 			      i++)
-			delete *i;
+			_aligned_free (*i);
 
 		depthStencilStates_.clear ();
 		rasterizerStates_.clear ();
