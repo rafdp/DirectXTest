@@ -9,7 +9,8 @@ void Vertex_t::SetPos (float x_,
 	y = y_;
 	z = z_;
 }
-/*
+
+#ifndef IGNORE_VERTEX_NORMAL
 void Vertex_t::SetNormal (float nx_,
 					      float ny_,
 					      float nz_)
@@ -18,7 +19,9 @@ void Vertex_t::SetNormal (float nx_,
 	ny = ny_;
 	nz = nz_;
 }
+#endif
 
+#ifndef IGNORE_VERTEX_TEXTURE
 void Vertex_t::SetTexture (float u_,
 						   float v_,
 						   float w_)
@@ -27,7 +30,8 @@ void Vertex_t::SetTexture (float u_,
 	v = v_;
 	w = w_;
 }
-*/
+#endif
+#ifndef IGNORE_VERTEX_COLOR
 void Vertex_t::SetColor (float r_,
 						 float g_,
 						 float b_,
@@ -38,6 +42,7 @@ void Vertex_t::SetColor (float r_,
 	b = b_;
 	a = a_;
 }
+#endif
 
 void Direct3DObject::ok ()
 {
@@ -61,8 +66,9 @@ Direct3DObject::Direct3DObject (XMMATRIX& world,
 	objectBufferN_   (0),
 	buffersSet_      (false),
 	objectBufferSet_ (false),
-	vertexShader_    ({ SHADER_NOT_SET }),
-	pixelShader_     ({ SHADER_NOT_SET }),
+	vertexShader_    (-1),
+	pixelShader_     (-1),
+	geometryShader_  (-1),
 	layoutN_         (0)
 {}
 
@@ -169,13 +175,14 @@ void Direct3DObject::Draw (ID3D11DeviceContext* deviceContext,
 					objectId_)
 			deviceContext->IASetIndexBuffer (indexBuffer_, DXGI_FORMAT_R32_UINT, 0);
 	}
-	XMMATRIX tempWVP = currM_.world_ * cam->GetView () * cam->GetProjection ();
+	XMMATRIX tempWVP = /*currM_.world_ **/ cam->GetView () * cam->GetProjection ();
 
 	currM_.objData_.WVP   = XMMatrixTranspose (tempWVP);
 	currM_.objData_.World = XMMatrixTranspose (currM_.world_);
 
 	cbManager_->Update (objectBufferN_, deviceContext);
 	cbManager_->SendVSBuffer (objectBufferN_, deviceContext);
+	cbManager_->SendGSBuffer (objectBufferN_, deviceContext);
 
 	deviceContext->IASetPrimitiveTopology (topology_);
 
@@ -186,27 +193,6 @@ void Direct3DObject::Draw (ID3D11DeviceContext* deviceContext,
 
 	END_EXCEPTION_HANDLING (DRAW_OBJECT)
 
-}
-
-
-void Direct3DObject::AttachVertexShader (ShaderDesc_t desc)
-{
-	BEGIN_EXCEPTION_HANDLING
-		if (desc.type != SHADER_VERTEX)
-			_EXC_N (SHADER_TYPE, "D3D: Invalid shader type, cannot use as vertex shader (obj %d)" _
-					objectId_)
-			vertexShader_ = desc;
-	END_EXCEPTION_HANDLING (ATTACH_VERTEX_SHADER)
-}
-
-void Direct3DObject::AttachPixelShader (ShaderDesc_t desc)
-{
-	BEGIN_EXCEPTION_HANDLING
-		if (desc.type != SHADER_PIXEL)
-			_EXC_N (SHADER_TYPE, "D3D: Invalid shader type, cannot use as pixel shader (obj %d)" _
-					objectId_)
-			pixelShader_ = desc;
-	END_EXCEPTION_HANDLING (ATTACH_PIXEL_SHADER)
 }
 
 void Direct3DObject::SaveLayout (UINT n)

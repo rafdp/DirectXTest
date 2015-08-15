@@ -25,6 +25,6 @@ public:
 	void Update (UINT n, ID3D11DeviceContext* deviceContext);
 
 	void SendVSBuffer (UINT n, ID3D11DeviceContext* deviceContext);
-
 	void SendPSBuffer (UINT n, ID3D11DeviceContext* deviceContext);
+	void SendGSBuffer (UINT n, ID3D11DeviceContext* deviceContext);
 };

@@ -1,5 +1,39 @@
 #include "Builder.h"
 
+
+Ray::Ray (UINT slot,
+		  Direct3DProcessor* d3dProc_,
+		  XMFLOAT4 color_,
+		  XMFLOAT4 point_,
+		  XMFLOAT4 vector_,
+		  float range_,
+		  float pow_,
+		  float scale_) :
+	color  (color_),
+	point  (point_),
+	vector (vector_),
+	range  (range_),
+	pow    (pow_),
+	scale  (scale_),
+	nConstantBuffer (),
+	d3dProc (d3dProc_)
+{
+	nConstantBuffer = d3dProc->RegisterConstantBuffer (this, 64, slot);
+}
+
+void Ray::Update ()
+{
+	d3dProc->UpdateConstantBuffer (nConstantBuffer);
+}
+void Ray::SendToVS ()
+{
+	d3dProc->SendCBToVS (nConstantBuffer);
+}
+void Ray::SendToGS ()
+{
+	d3dProc->SendCBToGS (nConstantBuffer);
+}
+
 void ParticleSystem::ok ()
 {
 	DEFAULT_OK_BLOCK
@@ -8,31 +42,19 @@ void ParticleSystem::ok ()
 ParticleSystem::ParticleSystem (float xMin, float xMax,
 								float yMin, float yMax,
 								float zMin, float zMax,
-								UINT quantity, float scale,
+								UINT quantity,
 								float r, float g, float b, float a,
 								float colorScatter)
 try :
-	particlesRender (),
-	particlesPos    ()
+	particles ()
 {
-	POINT3D point = {};
-	Vertex_t vertices[3] = {};
-	float d = 0.01f * scale;
-	POINT3D color = {};
+	Vertex_t vertex = {};
+	XMFLOAT3 color = {};
 	for (UINT i = 0; i < quantity; i++)
 	{
-		point.x = (rand () * 1.0f / RAND_MAX) * (xMax - xMin) + xMin;
-		point.y = (rand () * 1.0f / RAND_MAX) * (yMax - yMin) + yMin;
-		point.z = (rand () * 1.0f / RAND_MAX) * (zMax - zMin) + zMin;
-		vertices[0].SetPos (point.x - d, 
-							point.y - 0.577f * d, 
-							point.z);
-		vertices[1].SetPos (point.x + d, 
-							point.y - 0.577f * d, 
-							point.z);
-		vertices[2].SetPos (point.x, 
-							point.y + 1.154f * d, 
-							point.z);
+		vertex.x = (rand () * 1.0f / RAND_MAX) * (xMax - xMin) + xMin;
+		vertex.y = (rand () * 1.0f / RAND_MAX) * (yMax - yMin) + yMin;
+		vertex.z = (rand () * 1.0f / RAND_MAX) * (zMax - zMin) + zMin;
 
 #define RAND_COLOR(a_, b_) \
 		color.a_ = b_ + 2 * colorScatter * (rand () * 1.0f / RAND_MAX - 0.5f); \
@@ -43,30 +65,24 @@ try :
 		RAND_COLOR (y, g);
 		RAND_COLOR (z, b);
 #undef RAND_COLOR
-		
-		vertices[0].SetColor (color.x, color.y, color.z, a);
-		vertices[1].SetColor (color.x, color.y, color.z, a);
-		vertices[2].SetColor (color.x, color.y, color.z, a);
 
-		particlesRender.insert (particlesRender.end (), vertices, vertices + 3);
-		particlesPos.push_back (point);
-		
+		vertex.SetColor (color.x, color.y, color.z, a);
+		particles.push_back (vertex);
 	}
 }
 _END_EXCEPTION_HANDLING (CTOR)
 
 ParticleSystem::~ParticleSystem ()
 {
-	particlesPos.clear ();
-	particlesRender.clear ();
+	particles.clear ();
 }
 
 void ParticleSystem::DumpToObject (Direct3DObject* drawing)
 {
-	drawing->AddVertexArray (particlesRender.data (), 
-							 particlesRender.size ());
+	drawing->AddVertexArray (particles.data (), 
+							 particles.size ());
 }
-
+/*
 void ParticleSystem::ApplyRay (float r, float g, float b,
 							   float x, float y, float z,
 							   float vx, float vy, float vz,
@@ -92,12 +108,12 @@ void ParticleSystem::ApplyRay (float r, float g, float b,
 		currentD = transform.x;
 		XMStoreFloat4 (&transform, XMVector3Length (vector));
 		currentD /= transform.x;
-		/*_MessageBox ("%f %f %f\n%f %f %f\n%f %f %f\n%f",
+		_MessageBox ("%f %f %f\n%f %f %f\n%f %f %f\n%f",
 					 x, y, z, vx, vy, vz,
 					 particlesPos[i].x,
 					 particlesPos[i].y,
 					 particlesPos[i].z,
-					 currentD);*/
+					 currentD);
 		if (currentD < d)
 		{
 			
@@ -113,12 +129,13 @@ void ParticleSystem::ApplyRay (float r, float g, float b,
 			particlesRender[3 * i + 0].SetColor (transform.x, transform.y, transform.z, particlesRender[3 * i + 0].a);
 			particlesRender[3 * i + 1].SetColor (transform.x, transform.y, transform.z, particlesRender[3 * i + 0].a);
 			particlesRender[3 * i + 2].SetColor (transform.x, transform.y, transform.z, particlesRender[3 * i + 0].a);
-			/*
+			
 			particlesRender[3 * i + 0].SetColor (1.0f, 1.0f, 1.0f, particlesRender[3 * i + 0].a);
 			particlesRender[3 * i + 1].SetColor (1.0f, 1.0f, 1.0f, particlesRender[3 * i + 0].a);
-			particlesRender[3 * i + 2].SetColor (1.0f, 1.0f, 1.0f, particlesRender[3 * i + 0].a);*/
+			particlesRender[3 * i + 2].SetColor (1.0f, 1.0f, 1.0f, particlesRender[3 * i + 0].a);
 		}
 
 
 	}
 }
+*/

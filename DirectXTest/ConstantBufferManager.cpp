@@ -73,3 +73,10 @@ void  Direct3DConstantBufferManager::SendPSBuffer (UINT n, ID3D11DeviceContext* 
 										 1,
 										 &buffers_[n].buffer);
 }
+
+void  Direct3DConstantBufferManager::SendGSBuffer (UINT n, ID3D11DeviceContext* deviceContext)
+{
+	deviceContext->GSSetConstantBuffers (buffers_[n].slot,
+										 1,
+										 &buffers_[n].buffer);
+}

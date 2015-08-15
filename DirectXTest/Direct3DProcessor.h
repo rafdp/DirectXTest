@@ -23,15 +23,16 @@ class Direct3DProcessor : NZA_t
 
 	std::vector<Direct3DObject*> objects_;
 	Direct3DShaderManager        shaderManager_;
-	ShaderDesc_t				 currentVertexShader_;
-	ShaderDesc_t                 currentPixelShader_;
+	ShaderIndex_t				 currentVertexShader_;
+	ShaderIndex_t                currentPixelShader_;
+	ShaderIndex_t				 currentGeometryShader_;
 
 	Direct3DConstantBufferManager cbManager_;
 
 	void InitDeviceAndSwapChain ();
 	void InitViewport ();
 	void InitDepthStencilView ();
-	void EnableShader (ShaderDesc_t desc);
+	void EnableShader (ShaderIndex_t desc);
 	
 
 public:
@@ -61,14 +62,15 @@ public:
 
 	void ProcessObjects ();
 
-	ShaderDesc_t LoadShader (std::string filename, 
-							 std::string function,
-							 SHADER_TYPES shaderType);
+	ShaderIndex_t LoadShader (std::string filename,
+							  std::string function,
+							  SHADER_TYPES shaderType);
 
-	ID3D11VertexShader* GetVertexShader (ShaderDesc_t desc);
-	ID3D11PixelShader*  GetPixelShader  (ShaderDesc_t desc);
+	ID3D11VertexShader*   GetVertexShader   (ShaderIndex_t desc);
+	ID3D11PixelShader*    GetPixelShader    (ShaderIndex_t desc);
+	ID3D11GeometryShader* GetGeometryShader (ShaderIndex_t desc);
 
-	UINT AddLayout (ShaderDesc_t desc,
+	UINT AddLayout (ShaderIndex_t desc,
 					bool position = false,
 					bool normal = false,
 					bool texture = false,
@@ -83,4 +85,7 @@ public:
 	void UpdateConstantBuffer (UINT n);
 	void SendCBToVS (UINT n);
 	void SendCBToPS (UINT n);
+	void SendCBToGS (UINT n);
+
+	void AttachShaderToObject (Direct3DObject* obj, ShaderIndex_t n);
 };

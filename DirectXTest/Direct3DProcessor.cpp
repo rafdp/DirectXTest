@@ -17,22 +17,23 @@ void Direct3DProcessor::ok ()
 
 Direct3DProcessor::Direct3DProcessor (WindowClass* wnd, uint8_t buffers)
 try :
-	swapChain_	         (nullptr),
-	device_              (nullptr),
-	deviceContext_       (nullptr),
-	wnd_                 (wnd),
-	nBuffers_            (buffers),
-	currentBuffer_	     (nullptr),
-	depthBuffer_         (nullptr),
-	depthStencilView_    (nullptr),
-	depthStencilStates_  (),
-	rasterizerStates_    (),
-	layouts_             (),
-	objects_             (),
-	shaderManager_       (),
-	currentVertexShader_ ({ SHADER_NOT_SET }),
-	currentPixelShader_  ({ SHADER_NOT_SET }),
-	cbManager_           ()
+	swapChain_	           (nullptr),
+	device_                (nullptr),
+	deviceContext_         (nullptr),
+	wnd_                   (wnd),
+	nBuffers_              (buffers),
+	currentBuffer_	       (nullptr),
+	depthBuffer_           (nullptr),
+	depthStencilView_      (nullptr),
+	depthStencilStates_    (),
+	rasterizerStates_      (),
+	layouts_               (),
+	objects_               (),
+	shaderManager_         (),
+	currentVertexShader_   (-1),
+	currentPixelShader_    (-1),
+	currentGeometryShader_ (-1),
+	cbManager_             ()
 {
 	if (wnd == nullptr)
 		_EXC_N (NULL_WND,
@@ -97,17 +98,12 @@ void Direct3DProcessor::ProcessDrawing (Direct3DCamera* cam)
 										   D3D11_CLEAR_STENCIL, 
 										   1.0f, 
 										   0);
-	static bool once = false;
 	for (auto i = objects_.begin ();
 			  i < objects_.end ();
 			  i++)
 	{
-		if (!once)
-		{
-			EnableShader ((*i)->vertexShader_);
-			EnableShader ((*i)->pixelShader_);
-			//once = true;
-		}
+		EnableShader ((*i)->vertexShader_);
+		EnableShader ((*i)->pixelShader_);
 		if ((*i)->blending_)
 		{
 			ApplyRasterizerState (1);
@@ -433,7 +429,7 @@ void Direct3DProcessor::ProcessObjects ()
 	END_EXCEPTION_HANDLING (PROCESS_OBJECTS)
 }
 
-ShaderDesc_t Direct3DProcessor::LoadShader (std::string filename,
+ShaderIndex_t Direct3DProcessor::LoadShader (std::string filename,
 											std::string function,
 											SHADER_TYPES shaderType)
 {
@@ -443,49 +439,62 @@ ShaderDesc_t Direct3DProcessor::LoadShader (std::string filename,
 									  device_);
 }
 
-ID3D11VertexShader* Direct3DProcessor::GetVertexShader (ShaderDesc_t desc)
+ID3D11VertexShader* Direct3DProcessor::GetVertexShader (ShaderIndex_t desc)
 {
 	return reinterpret_cast<ID3D11VertexShader*> (shaderManager_.GetShader (desc));
 }
 
-ID3D11PixelShader* Direct3DProcessor::GetPixelShader (ShaderDesc_t desc)
+ID3D11PixelShader* Direct3DProcessor::GetPixelShader (ShaderIndex_t desc)
 {
 	return reinterpret_cast<ID3D11PixelShader*> (shaderManager_.GetShader (desc));
 }
 
-void Direct3DProcessor::EnableShader (ShaderDesc_t desc)
+ID3D11GeometryShader* Direct3DProcessor::GetGeometryShader (ShaderIndex_t desc)
+{
+	return reinterpret_cast<ID3D11GeometryShader*> (shaderManager_.GetShader (desc));
+}
+
+void Direct3DProcessor::EnableShader (ShaderIndex_t desc)
 {
 	BEGIN_EXCEPTION_HANDLING
-	if (desc.type != SHADER_VERTEX && desc.type != SHADER_PIXEL)
+	if (!shaderManager_.CheckShaderType (desc))
 		_EXC_N (SHADER_TYPE, "D3D: Invalid shader type")
 
-	if (desc.type == SHADER_VERTEX)
+	switch (shaderManager_.GetType (desc))
 	{
-		if (desc == currentVertexShader_) return;
-		currentVertexShader_ = desc;
-		deviceContext_->VSSetShader (GetVertexShader (desc), 0, 0);
-		return;
+		case SHADER_VERTEX:
+			if (desc == currentVertexShader_) return;
+			currentVertexShader_ = desc;
+			deviceContext_->VSSetShader (GetVertexShader (desc), 0, 0);
+			break;
+		case SHADER_PIXEL:
+			if (desc == currentPixelShader_) return;
+			currentPixelShader_ = desc;
+			deviceContext_->PSSetShader (GetPixelShader (desc), 0, 0);
+			break;
+		case SHADER_GEOMETRY:
+			if (desc == currentGeometryShader_) return;
+			currentGeometryShader_ = desc;
+			deviceContext_->GSSetShader (GetGeometryShader (desc), 0, 0);
+			break;
+		default:
+			break;
 	}
 
-	if (desc.type == SHADER_PIXEL)
-	{
-		if (desc == currentPixelShader_) return;
-		currentPixelShader_ = desc;
-		deviceContext_->PSSetShader (GetPixelShader (desc), 0, 0);
-		return;
-	}
+
+
 	END_EXCEPTION_HANDLING (ENABLE_SHADER)
 }
 
-UINT Direct3DProcessor::AddLayout (ShaderDesc_t desc,
+UINT Direct3DProcessor::AddLayout (ShaderIndex_t desc,
 								   bool position,
 								   bool normal,
  								   bool texture,
 	 							   bool color)
 {
 	BEGIN_EXCEPTION_HANDLING
-
-	if (desc.type != SHADER_VERTEX)
+		printf ("%d\n", shaderManager_.GetType (desc));
+	if (shaderManager_.GetType (desc) != SHADER_VERTEX)
 		_EXC_N (SHADER_TYPE, "D3D: Unable to create layout, invalid shader type")
 
 	std::vector<D3D11_INPUT_ELEMENT_DESC> inputElements;
@@ -497,7 +506,8 @@ UINT Direct3DProcessor::AddLayout (ShaderDesc_t desc,
 								   offsetof (Vertex_t, x), 
 								   D3D11_INPUT_PER_VERTEX_DATA, 
 								   0 });
-	/*
+#ifndef IGNORE_VERTEX_NORMAL
+	
 	if (normal)
 		inputElements.push_back ({ "NORMAL",
 								   0,
@@ -505,8 +515,10 @@ UINT Direct3DProcessor::AddLayout (ShaderDesc_t desc,
 								   0,
 								   offsetof (Vertex_t, nx),
 								   D3D11_INPUT_PER_VERTEX_DATA,
-								   0 });*/
-	/*
+								   0 });
+#endif
+
+#ifndef IGNORE_VERTEX_TEXTURE
 	if (texture & !color)
 		inputElements.push_back ({ "TEXCOORD",
 								   0,
@@ -514,7 +526,9 @@ UINT Direct3DProcessor::AddLayout (ShaderDesc_t desc,
 								   0,
 								   offsetof (Vertex_t, u),
 								   D3D11_INPUT_PER_VERTEX_DATA,
-								   0 });*/
+								   0 });
+#endif
+#ifndef IGNORE_VERTEX_COLOR
 	if (!texture & color)
 		inputElements.push_back ({ "COLOR",
 								   0,
@@ -523,6 +537,7 @@ UINT Direct3DProcessor::AddLayout (ShaderDesc_t desc,
 								   offsetof (Vertex_t, r),
 								   D3D11_INPUT_PER_VERTEX_DATA,
 								   0 });
+#endif
 	HRESULT result = S_OK;
 	layouts_.push_back (nullptr);
 
@@ -590,4 +605,33 @@ void Direct3DProcessor::SendCBToVS (UINT n)
 void Direct3DProcessor::SendCBToPS (UINT n)
 {
 	cbManager_.SendPSBuffer (n, deviceContext_);
+}
+void Direct3DProcessor::SendCBToGS (UINT n)
+{
+	cbManager_.SendGSBuffer (n, deviceContext_);
+}
+
+
+void Direct3DProcessor::AttachShaderToObject (Direct3DObject* obj, 
+											  ShaderIndex_t n)
+{
+	BEGIN_EXCEPTION_HANDLING
+
+	/*if (!shaderManager_.CheckShaderType (n))
+		_EXC_N (SHADER_TYPE, "D3D: Invalid shader type")*/
+
+	switch (shaderManager_.GetType (n))
+	{
+		case SHADER_VERTEX:
+			obj->vertexShader_ = n;
+			break;
+		case SHADER_PIXEL:
+			obj->pixelShader_ = n;
+			break;
+		case SHADER_GEOMETRY:
+			obj->geometryShader_ = n;
+			break;
+	}
+
+	END_EXCEPTION_HANDLING (ATTACH_SHADER_TO_OBJECT)
 }

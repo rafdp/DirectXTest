@@ -1,13 +1,14 @@
 #include "Builder.h"
 
-bool ShaderDesc_t::operator == (const ShaderDesc_t& that)
+bool Direct3DShaderManager::CheckShaderType (UINT n)
 {
-	if (type != that.type)           return false;
-	if (blobIndex != that.blobIndex) return false;
-	if (index != that.index)         return false;
+	if (n >= shaders_.size ())
+		_EXC_N (OUT_OF_RANGE, "D3D: Out of range index (%d of %d)" _ n _ shaders_.size ())
+	if (shaders_[n].shaderType < SHADER_VERTEX || 
+		shaders_[n].shaderType >= SHADER_NOT_SET)
+		return false;
 	return true;
 }
-
 
 void Direct3DShaderManager::ok ()
 {
@@ -16,10 +17,8 @@ void Direct3DShaderManager::ok ()
 
 Direct3DShaderManager::Direct3DShaderManager ()
 try :
-	blobs_ (),
-	vertexShaders_ (),
-	pixelShaders_ (),
-	loaded_ ()
+	shaders_ (),
+	loaded_  ()
 {
 
 }
@@ -27,34 +26,25 @@ _END_EXCEPTION_HANDLING (CTOR)
 
 Direct3DShaderManager::~Direct3DShaderManager ()
 {
-	for (auto i = blobs_.begin ();
-			  i < blobs_.end ();
-			  i++)
-		if (*i) (*i)->Release ();
-
-	blobs_.clear ();
-
-	for (auto i = vertexShaders_.begin ();
-			  i < vertexShaders_.end ();
-			  i++)
-		if (*i) (*i)->Release ();
-
-	vertexShaders_.clear ();
-
-	for (auto i = pixelShaders_.begin ();
-			  i < pixelShaders_.end ();
-			  i++)
-		if (*i) (*i)->Release ();
-
-	pixelShaders_.clear ();
+	for (auto i = shaders_.begin ();
+	i < shaders_.end ();
+		i++)
+	{
+		if (i->blob) i->blob->Release ();
+		if (i->shader)
+		{
+			(reinterpret_cast <ID3D11DeviceChild*> (i->shader))->Release ();
+		}
+	}
+	shaders_.clear ();
 
 	loaded_.clear ();
 }
 
-ShaderDesc_t Direct3DShaderManager::LoadShader (std::string filename,
-												std::string function,
-												SHADER_TYPES shaderType,
-												ID3D11Device* device)
+ShaderIndex_t Direct3DShaderManager::LoadShader (std::string filename,
+											 	 std::string function,
+										 		 SHADER_TYPES shaderType,
+									 			 ID3D11Device* device)
 {
 	BEGIN_EXCEPTION_HANDLING
 	std::string storing (filename);
@@ -65,113 +55,120 @@ ShaderDesc_t Direct3DShaderManager::LoadShader (std::string filename,
 
 	HRESULT result = S_OK;
 
-	blobs_.push_back (nullptr);
-	UINT nBlob = blobs_.size () - 1;
+	shaders_.push_back ({});
+	ShaderDesc_t& currShader = shaders_.back ();
 
-	if (shaderType == SHADER_VERTEX)
+	std::string version, name;
+	switch (shaderType)
 	{
-		result = D3DX11CompileFromFileA (filename.c_str (),
-										 0,
-										 0,
-										 function.c_str (),
-										 "vs_4_0",
-										 0,
-										 0,
-										 0,
-										 &blobs_[nBlob],
-										 0,
-										 0);
-
-		if (result != S_OK)
-			_EXC_N (LOAD_SHADER_BLOB, "D3D: Failed to load vertex shader (%s) from file (%s)" _
-					function.c_str () _
-					filename.c_str ())
-
-		vertexShaders_.push_back (nullptr);
-		device->CreateVertexShader (blobs_[nBlob]->GetBufferPointer (), 
-									blobs_[nBlob]->GetBufferSize (), 
-									NULL, 
-									&vertexShaders_.back ());
-		return {SHADER_VERTEX, nBlob, static_cast <UINT> (vertexShaders_.size () - 1)};
-
+		case SHADER_VERTEX:
+			version = "vs_4_0";
+			name = "vertex";
+			currShader.shaderType = SHADER_VERTEX;
+			break;
+		case SHADER_PIXEL:
+			version = "ps_4_0";
+			name = "pixel";
+			currShader.shaderType = SHADER_PIXEL;
+			break;
+		case SHADER_GEOMETRY:
+			version = "gs_4_0";
+			name = "geometry";
+			currShader.shaderType = SHADER_GEOMETRY;
+			break;
+		default:
+			_EXC_N (SHADER_TYPE, "D3D: Invalid shader type, cannot load")
+			return -1;
 	}
 
-	if (shaderType == SHADER_PIXEL)
+
+	result = D3DX11CompileFromFileA (filename.c_str (),
+									 0,
+									 0,
+									 function.c_str (),
+									 version.c_str (),
+									 0,
+									 0,
+									 0,
+									 &currShader.blob,
+									 0,
+									 0);
+
+	if (result != S_OK)
+		_EXC_N (LOAD_SHADER_BLOB, "D3D: Failed to load %s shader (%s) from file (%s) (0x%x)" _
+				name.c_str () _
+				function.c_str () _
+				filename.c_str () _ 
+				result)
+
+	switch (shaderType)
 	{
-		result = D3DX11CompileFromFileA (filename.c_str (),
-										 0,
-										 0,
-										 function.c_str (),
-										 "ps_4_0",
-										 0,
-										 0,
-										 0,
-										 &blobs_[nBlob],
-										 0,
-										 0);
-
-		if (result != S_OK)
-			_EXC_N (LOAD_SHADER_BLOB, "D3D: Failed to load pixel shader (%s) from file (%s)" _
-					function.c_str () _
-					filename.c_str ())
-		pixelShaders_.push_back (nullptr);
-		device->CreatePixelShader (blobs_[nBlob]->GetBufferPointer (),
-								   blobs_[nBlob]->GetBufferSize (),
-								   NULL,
-								   &pixelShaders_.back ());
-		return { SHADER_PIXEL, nBlob, static_cast <UINT> (pixelShaders_.size () - 1) };
-
+		case SHADER_VERTEX:
+			result = device->CreateVertexShader (currShader.blob->GetBufferPointer (),
+												 currShader.blob->GetBufferSize (),
+												 NULL,
+												 reinterpret_cast <ID3D11VertexShader**> (&currShader.shader));
+			break;
+		case SHADER_PIXEL:
+			result = device->CreatePixelShader (currShader.blob->GetBufferPointer (),
+											    currShader.blob->GetBufferSize (),
+											    NULL,
+											    reinterpret_cast <ID3D11PixelShader**> (&currShader.shader));
+			break;
+		case SHADER_GEOMETRY:
+			result = device->CreateGeometryShader (currShader.blob->GetBufferPointer (),
+												   currShader.blob->GetBufferSize (),
+												   NULL,
+												   reinterpret_cast <ID3D11GeometryShader**> (&currShader.shader));
+			break;
+		default:
+			break;
 	}
-	_EXC_N (SHADER_TYPE, "D3D: Invalid shader type, cannot load")
-	return {};
+	if (result != S_OK)
+		_EXC_N (CREATE_SHADER, "Failed to create %s shader from blob" _ name.c_str ())
+
+	return shaders_.size () - 1;
 	END_EXCEPTION_HANDLING (LOAD_SHADER)
 }
 
-void** Direct3DShaderManager::GetShader (ShaderDesc_t desc)
+void* Direct3DShaderManager::GetShader (ShaderIndex_t n)
 {
 	BEGIN_EXCEPTION_HANDLING
-	if (desc.type != SHADER_VERTEX && desc.type != SHADER_PIXEL)
+	if (n >= shaders_.size ())
+		_EXC_N (OUT_OF_RANGE, "D3D: Out of range shader")
+
+	if (!CheckShaderType (n))
 		_EXC_N (SHADER_TYPE, "D3D: Invalid shader type")
 
 
-	if (desc.blobIndex >= blobs_.size () || 
-		blobs_[desc.blobIndex] == nullptr)
-		_EXC_N (BLOB_INDEX, "D3D: Invalid blob index")
+	if (shaders_[n].blob == nullptr)
+		_EXC_N (NULL_BLOB, "D3D: Invalid index")
 
-	if (desc.type == SHADER_VERTEX)
-	{
-		if (desc.index >= vertexShaders_.size () ||
-			vertexShaders_[desc.index] == nullptr)
-			_EXC_N (VERTEX_SHADER_INDEX, "D3D: Invalid vertex shader index")
-
-		return reinterpret_cast<void**> (vertexShaders_[desc.index]);
-	}
-
-	if (desc.type == SHADER_PIXEL)
-	{
-		if (desc.index >= pixelShaders_.size () ||
-			pixelShaders_[desc.index] == nullptr)
-			_EXC_N (PIXEL_SHADER_INDEX, "D3D: Invalid pixel shader index")
-
-			return reinterpret_cast<void**> (pixelShaders_[desc.index]);
-	}
-
-	_EXC_N (SHADER_TYPE, "D3D: Invalid shader type")
-	return nullptr;
+	return shaders_[n].shader;
 
 	END_EXCEPTION_HANDLING (GET_VERTEX_SHADER)
 }
 
 
-ID3D10Blob* Direct3DShaderManager::GetBlob (ShaderDesc_t desc)
+ID3D10Blob* Direct3DShaderManager::GetBlob (ShaderIndex_t n)
 {
 	BEGIN_EXCEPTION_HANDLING
 
-	if (desc.blobIndex >= blobs_.size () ||
-		blobs_[desc.blobIndex] == nullptr)
-		_EXC_N (BLOB_INDEX, "D3D: Invalid blob index")
+	if (n >= shaders_.size ())
+		_EXC_N (OUT_OF_RANGE, "D3D: Out of range shader")
 
-		return blobs_[desc.blobIndex];
+	if (shaders_[n].blob == nullptr)
+		_EXC_N (NULL_BLOB, "D3D: Invalid index")
+
+	return shaders_[n].blob;
 
 	END_EXCEPTION_HANDLING (GET_BLOB)
+}
+
+UINT Direct3DShaderManager::GetType (ShaderIndex_t n)
+{
+	if (n >= shaders_.size ())
+		_EXC_N (OUT_OF_RANGE, "D3D: Out of range shader")
+
+	return shaders_[n].shaderType;
 }

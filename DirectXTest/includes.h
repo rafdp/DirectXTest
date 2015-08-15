@@ -21,3 +21,6 @@
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dx11.lib")
 #pragma comment (lib, "d3dx10.lib")
+
+#define IGNORE_VERTEX_NORMAL
+#define IGNORE_VERTEX_TEXTURE

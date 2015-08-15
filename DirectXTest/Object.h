@@ -30,27 +30,33 @@ public:
 struct Vertex_t
 {
 	float x, y, z;
-	//float nx, ny, nz;
-	//float u, v, w;
-	float r, g, b, a;
-	
-
-	void SetPos (float x_, 
+	void SetPos (float x_,
 				 float y_,
 				 float z_);
 
-	/*void SetNormal (float nx_,
-				    float ny_,
-				    float nz_);
 
+#ifndef IGNORE_VERTEX_NORMAL
+	float nx, ny, nz;
+	void SetNormal (float nx_,
+					float ny_,
+					float nz_);
+#endif
+
+#ifndef IGNORE_VERTEX_TEXTURE
+	float u, v, w;
 	void SetTexture (float u_,
 					 float v_,
-					 float w_ = 0.0f);*/
+					 float w_ = 0.0f);
+#endif
 
+#ifndef IGNORE_VERTEX_COLOR
+	float r, g, b, a;
 	void SetColor (float r_,
 				   float g_,
 				   float b_,
 				   float a_ = 0.0f);
+#endif
+	
 };
 struct Direct3DObjectBuffer
 {
@@ -83,8 +89,9 @@ class Direct3DObject : NZA_t
 	bool buffersSet_;
 	bool objectBufferSet_;
 
-	ShaderDesc_t vertexShader_;
-	ShaderDesc_t pixelShader_;
+	ShaderIndex_t vertexShader_;
+	ShaderIndex_t pixelShader_;
+	ShaderIndex_t geometryShader_;
 	UINT layoutN_;
 
 	friend class Direct3DProcessor;
@@ -119,8 +126,6 @@ public:
 	void Draw (ID3D11DeviceContext* deviceContext,
 			   Direct3DCamera* cam);
 
-	void AttachVertexShader (ShaderDesc_t desc);
-	void AttachPixelShader  (ShaderDesc_t desc);
 
 	void ClearBuffers ();
 	void SetVertexBuffer (ID3D11Device* device);
