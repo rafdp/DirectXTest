@@ -11,6 +11,7 @@ cbuffer testBuffer : register(b8)
 	float4 Position;
 	float4 Direction;
 	float  Min;
+	float Pow;
 }
 
 struct VS_OUTPUT
@@ -29,7 +30,9 @@ VS_OUTPUT VShader (float4 inPos : POSITION, float4 inColor : COLOR)
 
 	float d = length (cross (m0m1, Direction.xyz)) / length (Direction.xyz);
 
-	if (d < Min) output.color = Color * (1.0f - d / Min);
+	float tempCos = cos (d / Min);
+
+	if (d < Min) output.color = Color * pow (tempCos, Pow);
 	else output.color = inColor * 0.5f;
 
 	output.position = mul (inPos, WVP);
@@ -41,4 +44,15 @@ VS_OUTPUT VShader (float4 inPos : POSITION, float4 inColor : COLOR)
 float4 PShader (VS_OUTPUT input) : SV_TARGET
 {
 	return input.color;
+}
+
+
+VS_OUTPUT VShaderCube (float4 inPos : POSITION, float4 inColor : COLOR)
+{
+	VS_OUTPUT output;
+	output.worldPos = mul (inPos, World);
+	output.position = mul (inPos, WVP);
+	output.color = inColor;
+
+	return output;
 }

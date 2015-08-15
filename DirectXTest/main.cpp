@@ -7,15 +7,19 @@ void GetParticles (Direct3DProcessor* proc);
 Direct3DObject* GetParticles_ (Direct3DProcessor* proc);
 
 
-
 struct CBData
 {
 	XMFLOAT4 color;
 	XMFLOAT4 point;
 	XMFLOAT4 vector;
 	float min;
-	float pad[3];
-};
+	float pow;
+	float pad[2];
+}; 
+
+void ProcessShaderData (CBData* data, Direct3DProcessor* proc, UINT n);
+
+
 
 int WINAPI WinMain (HINSTANCE hInstance,
 					HINSTANCE legacy,
@@ -39,8 +43,8 @@ int WINAPI WinMain (HINSTANCE hInstance,
 		ParticleSystem ps (-1.0f, 1.0f,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
-						   4000000, 0.3f,
-						   1.0f, 1.0f, 1.0f, 0.3f,
+						   300000, 0.8f,
+						   0.0f, 0.75f, 1.0f, 0.2f,
 						   0.01f);
 		printf ("Particles loaded\n");
 		WindowClass window (1800, 1200);
@@ -51,15 +55,19 @@ int WINAPI WinMain (HINSTANCE hInstance,
 							0.0f, 0.0f, 0.0f,
 							0.0, 1.0f, 0.0f,
 							0.15f);
-		Direct3DObject* obj = GetCube (&d3dProc);
+
+		float x_ = rand () * 1.0f / RAND_MAX;
+		float y_ = rand () * 1.0f / RAND_MAX;
+		float z_ = rand () * 1.0f / RAND_MAX;
 
 		CBData passToShader =
 		{
-			{ 1.0f, 0.0f, 0.0f, 0.6f },
-			{3.0f, 4.0f, 3.0f, 1.0f},
-			{-3.0f, -4.0f, -2.25f, 0.0f },
-			{ 0.1f }
+			{ 1.0f, 0.0f, 0.0f, 1.0f },
+			{ x_, y_, z_, 1.0f },
+			{ 0.1f - x_, -0.3f - y_, 0.5f - z_, 0.0f },
+			0.1f, 1.0f
 		};
+		Direct3DObject* obj = GetCube (&d3dProc);
 
 		UINT cbN = d3dProc.RegisterConstantBuffer (&passToShader, 
 												   sizeof (CBData), 
@@ -114,7 +122,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				if (msg.message == WM_QUIT) break;
 			}
 			// SCENE PROCESSING
-
+			ProcessShaderData (&passToShader, &d3dProc, cbN);
 
 			obj->GetWorld () = particles->GetWorld () *= XMMatrixRotationX (0.005f) * XMMatrixRotationY (0.01f) * XMMatrixRotationZ (0.015f);
 			d3dProc.SendCBToVS (cbN);
@@ -125,7 +133,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 			time += t.GetElapsedTime ("mks");
 			if (time >= 500000.0)
 			{
-				printf ("\r%d     ", frames * 2);
+				printf ("\r%f %d     ", passToShader.pow, frames * 2);
 				time = 0.0;
 				frames = 0;
 			}
@@ -161,7 +169,7 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 							   Direct3DObject (world,
 											   false, 
 											   true, 
-											   D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
+											   D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
 	Vertex_t vertices[] =
 	{
@@ -174,7 +182,7 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 		{ -1.0f,  1.0f, -1.0f }, //5
 		{ -1.0f, -1.0f,  1.0f }, //6
 		{ -1.0f, -1.0f, -1.0f }, //7
-
+		/*
 		{ 1.0f,  1.0f,  1.0f }, //8  top
 		{ 1.0f,  1.0f, -1.0f }, //9
 		{ -1.0f,  1.0f,  1.0f }, //10
@@ -193,43 +201,55 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 		{ 1.0f,  1.0f, -1.0f }, //20 back
 		{ 1.0f, -1.0f, -1.0f }, //21
 		{ -1.0f,  1.0f, -1.0f }, //22
-		{ -1.0f, -1.0f, -1.0f }  //23
+		{ -1.0f, -1.0f, -1.0f }  //23*/
 	};
 
 	for (int i = 0; i < sizeof (vertices) / sizeof (Vertex_t); i++)
-		vertices[i].SetColor (rand () * 1.0f / RAND_MAX, 
-							  rand () * 1.0f / RAND_MAX, 
-							  rand () * 1.0f / RAND_MAX,
-							  0.3f);
+		vertices[i].SetColor (0.0f, 
+							  0.75f, 
+							  1.0f,
+							  0.5f);
 
 	cube->AddVertexArray (vertices, sizeof (vertices) / sizeof (Vertex_t));
 
 
 	UINT mapping[] =
 	{
-		0, 3, 1,
-		0, 2, 3,
+		0, 1,
+		1, 3, 
+		3, 2,
+		2, 0,
 
-		4, 5, 7,
-		4, 7, 6,
+		4, 5,
+		5, 7,
+		7, 6,
+		6, 4,
+		
+		0, 4,
+		1, 5,
+		2, 6,
+		3, 7,
+		/*
+		12, 13,
+		13, 14,
+		14, 15,
+		15, 12,
 
-		8, 9, 11,
-		8, 11, 10,
+		16, 17,
+		17, 18,
+		18, 19,
+		19, 16,
 
-		12, 14, 15,
-		12, 15, 13,
-
-		19, 17, 16,
-		18, 19, 16,
-
-		21, 23, 20,
-		23, 22, 20
+		20, 21,
+		21, 22,
+		22, 23,
+		23, 20*/
 	};
 
 	cube->AddIndexArray (mapping, sizeof (mapping) / sizeof (UINT));
 	
 	ShaderDesc_t vertS = proc->LoadShader ("shaders.hlsl",
-										   "VShader",
+										   "VShaderCube",
 										   SHADER_VERTEX);
 
 	cube->AttachVertexShader (vertS);
@@ -368,4 +388,19 @@ Direct3DObject* GetParticles_ (Direct3DProcessor* proc)
 
 	proc->ApplyBlendState (proc->AddBlendState (true));
 	return particle;
+}
+
+void ProcessShaderData (CBData* data, Direct3DProcessor* proc, UINT n)
+{
+	if (GetAsyncKeyState (VK_UP) & 0x8000)
+		if (data->pow < 10.0f) data->pow += 0.1f;
+	if (GetAsyncKeyState (VK_DOWN) & 0x8000)
+		if (data->pow > -1.0f) data->pow -= 0.1f;
+	for (int8_t i = 0; i < 9; i++)
+		if (GetAsyncKeyState ('0' + i)) data->pow = i;
+	if (GetAsyncKeyState (VK_RETURN) & 0x8000)
+	{
+		proc->UpdateConstantBuffer (n);
+		while (GetAsyncKeyState (VK_RETURN));
+	}
 }

@@ -88,8 +88,8 @@ void Direct3DProcessor::ProcessDrawing (Direct3DCamera* cam)
 	BEGIN_EXCEPTION_HANDLING
 	deviceContext_->ClearRenderTargetView (currentBuffer_,
 										   D3DXCOLOR (0.0f, 
-													  0.05f, 
-													  0.05f, 
+													  0.0f, 
+													  0.0f, 
 													  0.0f));
 
 	deviceContext_->ClearDepthStencilView (depthStencilView_, 
