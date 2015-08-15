@@ -14,7 +14,6 @@ int WINAPI WinMain (HINSTANCE hInstance,
 					int nCmdShow)
 {
 	__EXPN__ = new ExceptionData_t (20, "ExceptionErrors.txt");
-
 	srand (static_cast<UINT>(time (NULL)));
 	AllocConsole ();
 	FILE* file = nullptr;
@@ -30,11 +29,11 @@ int WINAPI WinMain (HINSTANCE hInstance,
 		ParticleSystem ps (-1.0f, 1.0f,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
-						   10000,
+						   100000,
 						   0.0f, 0.75f, 1.0f, 0.2f,
 						   0.01f);
 		printf ("Particles loaded\n");
-		WindowClass window (SCREEN_WIDTH * 0.75, SCREEN_HEIGHT * 0.75);
+		WindowClass window (SCREEN_WIDTH * 0.75f, SCREEN_HEIGHT * 0.75f);
 		Direct3DProcessor d3dProc (&window);
 		XMFLOAT4 camPos = { 0.0f, 3.0f, 8.0f, 1.0f };
 		Direct3DCamera cam (&window,
@@ -49,13 +48,13 @@ int WINAPI WinMain (HINSTANCE hInstance,
 		float x_ = rand () * 1.0f / RAND_MAX;
 		float y_ = rand () * 1.0f / RAND_MAX;
 		float z_ = rand () * 1.0f / RAND_MAX;
-
-		Ray ray (8,
+		
+		Ray ray (2,
 				 &d3dProc,
 				 { 1.0f, 0.0f, 0.0f, 0.9f },
 				 { x_, y_, z_, 1.0f },
 				 { 0.1f - x_, -0.3f - y_, 0.5f - z_, 0.0f },
-				 0.1f, 1.0f, 0.8f);
+				 0.1f, 1.0f, 2.0f);
 
 		//Direct3DObject* obj = GetCube (&d3dProc);
 
@@ -76,23 +75,23 @@ int WINAPI WinMain (HINSTANCE hInstance,
 		d3dProc.RegisterObject (particles);
 		
 		ShaderIndex_t vertS = d3dProc.LoadShader ("shaders.fx",
-											   "VShaderCube",
+											   "VShader",
 											   SHADER_VERTEX);
 
 		ShaderIndex_t geoS = d3dProc.LoadShader ("shaders.fx",
 												 "GShader",
 												 SHADER_GEOMETRY);
-
+												 
 		ShaderIndex_t pixS = d3dProc.LoadShader ("shaders.fx",
 												 "PShader",
 												 SHADER_PIXEL);
 
-		//d3dProc.AttachShaderToObject (particles, vertS);
-		//d3dProc.AttachShaderToObject (particles, pixS);
-		//d3dProc.AttachShaderToObject (particles, geoS);
+		d3dProc.AttachShaderToObject (particles, vertS);
+		d3dProc.AttachShaderToObject (particles, pixS);
+		d3dProc.AttachShaderToObject (particles, geoS);
 
 
-		//d3dProc.EnableLayout (d3dProc.AddLayout (vertS, true, false, false, true));
+		d3dProc.EnableLayout (d3dProc.AddLayout (vertS, true, false, false, true));
 
 		d3dProc.ProcessObjects ();
 		cam.Update ();
@@ -113,8 +112,9 @@ int WINAPI WinMain (HINSTANCE hInstance,
 			ProcessShaderData (&ray);
 
 			/*obj->GetWorld () =*/ particles->GetWorld () *= XMMatrixRotationX (0.005f) * XMMatrixRotationY (0.01f) * XMMatrixRotationZ (0.015f);
-			ray.SendToGS ();
+			
 			d3dProc.SendCBToGS (camBuf);
+			ray.SendToGS ();
 			d3dProc.ProcessDrawing (&cam);
 			d3dProc.Present ();
 			t.stop ();
@@ -126,6 +126,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				time = 0.0;
 				frames = 0;
 			}
+			Sleep (100);
 		}
 		FreeConsole ();
 	}

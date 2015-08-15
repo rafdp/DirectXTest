@@ -18,7 +18,8 @@ Ray::Ray (UINT slot,
 	nConstantBuffer (),
 	d3dProc (d3dProc_)
 {
-	nConstantBuffer = d3dProc->RegisterConstantBuffer (this, 64, slot);
+	nConstantBuffer = d3dProc->RegisterConstantBuffer (&color, 64, slot);
+	Update ();
 }
 
 void Ray::Update ()
