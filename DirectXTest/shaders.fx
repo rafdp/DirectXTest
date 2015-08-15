@@ -27,25 +27,15 @@ struct VS_OUTPUT
 	float4 color : COLOR;
 };
 
-struct PS_INPUT
-{
-	float4 position : SV_POSITION;
-	float4 worldPos: POSITION;
-	float4 color : COLOR;
-};
 
-[maxvertexcount (3)]
+[maxvertexcount (9)]
 void GShader (point VS_OUTPUT input[1],
 			  inout TriangleStream<VS_OUTPUT> OutputStream)
 {
 	
 	float3 normal = normalize (CamPos.xyz - input[0].worldPos.xyz);
-	float zPerpendicular = -(normal.x * normal.x + 
-							 normal.y * (normal.y + 1.0f)) / 
-							 normal.z;
-	float3 upAxis = normalize (float3 (input[0].worldPos.x, 
-									   input[0].worldPos.y + 1.0f, 
-									   input[0].worldPos.z + zPerpendicular));
+	float zPerpendicular = -normal.y / normal.z;
+	float3 upAxis = normalize (float3 (0.0f, 1.0f, zPerpendicular));
 	float3 rightAxis = normalize (cross (normal, upAxis));
 	
 	VS_OUTPUT outputVert[3];
@@ -57,10 +47,14 @@ void GShader (point VS_OUTPUT input[1],
 	//outputVert[1].worldPos = float4(input[0].worldPos.xyz + float3 (0.0f, 0.05f, 0.0f), 1.0f);
 	//outputVert[2].worldPos = float4(input[0].worldPos.xyz + float3 (0.0f, 0.0f, 0.05f), 1.0f);
 
+	//outputVert[0].worldPos = input[0].worldPos;
+	//outputVert[1].worldPos = input[0].worldPos;
+	//outputVert[2].worldPos = input[0].worldPos;
+
 	outputVert[0].position = mul (outputVert[0].worldPos, VP);
 	outputVert[1].position = mul (outputVert[1].worldPos, VP);
 	outputVert[2].position = mul (outputVert[2].worldPos, VP);
-	/*
+	
 	float3 m0m1 = Position.xyz - input[0].worldPos.xyz;
 	float d = length (cross (m0m1, Direction.xyz)) / length (Direction.xyz);
 	if (d < Range)
@@ -74,13 +68,13 @@ void GShader (point VS_OUTPUT input[1],
 
 		VS_OUTPUT outputVertNew[3];
 
-		float3 shift = float3 (sin (1024.0f * input[0].worldPos.x)/2.0f + 0.5f,
-							   cos (1124.0f * input[0].worldPos.y) / 2.0f + 0.5f,
-							   sin (1224.0f * input[0].worldPos.z) / 2.0f + 0.5f);
+		float3 shift = float3 (Scale*0.02f*(sin (1024.0f * input[0].worldPos.x) / 2.0f + 0.5f),
+							   Scale*0.02f*(cos (1124.0f * input[0].worldPos.y) / 2.0f + 0.5f),
+							   Scale*0.02f*(sin (1224.0f * input[0].worldPos.z) / 2.0f + 0.5f));
 		
-		outputVertNew[0].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f - rightAxis + shift) * 0.01f * Scale, 1.0f);
-		outputVertNew[1].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f + rightAxis + shift) * 0.01f * Scale, 1.0f);
-		outputVertNew[2].worldPos = float4(input[0].worldPos.xyz + (upAxis * 1.154f + shift) * 0.01f * Scale, 1.0f);
+		outputVertNew[0].worldPos = float4(input[0].worldPos.xyz + shift - (upAxis * 0.577f - rightAxis) * 0.01f * Scale, 1.0f);
+		outputVertNew[1].worldPos = float4(input[0].worldPos.xyz + shift - (upAxis * 0.577f + rightAxis) * 0.01f * Scale, 1.0f);
+		outputVertNew[2].worldPos = float4(input[0].worldPos.xyz + shift + (upAxis * 1.154f) * 0.01f * Scale, 1.0f);
 
 		outputVertNew[0].position = mul (outputVertNew[0].worldPos, VP);
 		outputVertNew[1].position = mul (outputVertNew[1].worldPos, VP);
@@ -93,14 +87,32 @@ void GShader (point VS_OUTPUT input[1],
 		OutputStream.Append (outputVertNew[0]);
 		OutputStream.Append (outputVertNew[1]);
 		OutputStream.Append (outputVertNew[2]);
+		OutputStream.RestartStrip ();
+		
+		outputVertNew[0].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f - rightAxis - shift) * 0.01f * Scale, 1.0f);
+		outputVertNew[1].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f + rightAxis - shift) * 0.01f * Scale, 1.0f);
+		outputVertNew[2].worldPos = float4(input[0].worldPos.xyz + (upAxis * 1.154f - shift) * 0.01f * Scale, 1.0f);
+
+		outputVertNew[0].position = mul (outputVertNew[0].worldPos, VP);
+		outputVertNew[1].position = mul (outputVertNew[1].worldPos, VP);
+		outputVertNew[2].position = mul (outputVertNew[2].worldPos, VP);
+
+		outputVertNew[0].color = colorEnd;
+		outputVertNew[1].color = colorEnd;
+		outputVertNew[2].color = colorEnd;
+
+		OutputStream.Append (outputVertNew[0]);
+		OutputStream.Append (outputVertNew[1]);
+		OutputStream.Append (outputVertNew[2]);
+		OutputStream.RestartStrip ();
 
 	}
-	else*/
-	//{
-		outputVert[0].color = Color;
-		outputVert[1].color = Color;
-		outputVert[2].color = Color;
-	//}
+	else
+	{
+		outputVert[0].color = input[0].color;
+		outputVert[1].color = input[0].color;
+		outputVert[2].color = input[0].color;
+	}
 	
 	OutputStream.Append (outputVert[0]);
 	OutputStream.Append (outputVert[1]);

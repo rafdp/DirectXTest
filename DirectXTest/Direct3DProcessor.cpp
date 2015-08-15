@@ -102,9 +102,29 @@ void Direct3DProcessor::ProcessDrawing (Direct3DCamera* cam)
 			  i < objects_.end ();
 			  i++)
 	{
-		if ((*i)->vertexShader_ != -1) EnableShader ((*i)->vertexShader_);
-		if ((*i)->pixelShader_ != -1) EnableShader ((*i)->pixelShader_);
-		if ((*i)->geometryShader_ != -1) EnableShader ((*i)->geometryShader_);
+		if ((*i)->vertexShader_ == -1)
+		{
+			deviceContext_->VSSetShader (nullptr, 0, 0);
+			currentVertexShader_ = -1;
+		}
+		else
+			EnableShader ((*i)->vertexShader_);
+
+		if ((*i)->pixelShader_ == -1)
+		{
+			deviceContext_->PSSetShader (nullptr, 0, 0);
+			currentPixelShader_ = -1;
+		}
+		else
+			EnableShader ((*i)->pixelShader_);
+
+		if ((*i)->geometryShader_ == -1)
+		{
+			deviceContext_->GSSetShader (nullptr, 0, 0);
+			currentGeometryShader_ = -1;
+		}
+		else
+			EnableShader ((*i)->geometryShader_);
 		if ((*i)->blending_)
 		{
 			ApplyRasterizerState (1);

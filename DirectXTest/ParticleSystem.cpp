@@ -51,6 +51,7 @@ try :
 {
 	Vertex_t vertex = {};
 	XMFLOAT3 color = {};
+	particles.reserve (quantity + 1);
 	for (UINT i = 0; i < quantity; i++)
 	{
 		vertex.x = (rand () * 1.0f / RAND_MAX) * (xMax - xMin) + xMin;

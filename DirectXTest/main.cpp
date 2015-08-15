@@ -26,15 +26,30 @@ int WINAPI WinMain (HINSTANCE hInstance,
 	try
 	{
 		printf ("Loading particles...\n");
+
+
+		WindowClass window (SCREEN_WIDTH * 0.75f, SCREEN_HEIGHT * 0.75f);
+		Direct3DProcessor d3dProc (&window);
+
+
+		ShaderIndex_t vertS = d3dProc.LoadShader ("shaders.fx",
+												  "VShader",
+												  SHADER_VERTEX);
+
+		ShaderIndex_t geoS = d3dProc.LoadShader ("shaders.fx",
+												 "GShader",
+												 SHADER_GEOMETRY);
+
+		ShaderIndex_t pixS = d3dProc.LoadShader ("shaders.fx",
+												 "PShader",
+												 SHADER_PIXEL);
 		ParticleSystem ps (-1.0f, 1.0f,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
 						   100000,
-						   0.0f, 0.75f, 1.0f, 0.2f,
+						   0.0f, 0.75f, 1.0f, 0.05f,
 						   0.01f);
 		printf ("Particles loaded\n");
-		WindowClass window (SCREEN_WIDTH * 0.75f, SCREEN_HEIGHT * 0.75f);
-		Direct3DProcessor d3dProc (&window);
 		XMFLOAT4 camPos = { 0.0f, 3.0f, 8.0f, 1.0f };
 		Direct3DCamera cam (&window,
 							camPos.x, camPos.y, camPos.z,
@@ -54,37 +69,22 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				 { 1.0f, 0.0f, 0.0f, 0.9f },
 				 { x_, y_, z_, 1.0f },
 				 { 0.1f - x_, -0.3f - y_, 0.5f - z_, 0.0f },
-				 0.1f, 1.0f, 2.0f);
+				 0.1f, 1.0f, 1.0f);
 
-		//Direct3DObject* obj = GetCube (&d3dProc);
+		Direct3DObject* obj = GetCube (&d3dProc);
 
 		XMMATRIX world = XMMatrixTranslation (0.0f, 0.0f, 0.0f);
 
 
 		Direct3DObject* particles = new (GetValidObjectPtr ()) 
-									Direct3DObject (world, false, false);
+				Direct3DObject (world, false, false, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
 		d3dProc.ApplyBlendState (d3dProc.AddBlendState (true));
 
-		/*ps.ApplyRay (1.0f, 0.0f, 0.0f, 
-					 3.0f, 4.0f, 3.0f,
-					 -3.0f, -4.0f, -2.25f,
-					 0.05f);*/
+		
 
 		ps.DumpToObject (particles);
 		d3dProc.RegisterObject (particles);
-		
-		ShaderIndex_t vertS = d3dProc.LoadShader ("shaders.fx",
-											   "VShader",
-											   SHADER_VERTEX);
-
-		ShaderIndex_t geoS = d3dProc.LoadShader ("shaders.fx",
-												 "GShader",
-												 SHADER_GEOMETRY);
-												 
-		ShaderIndex_t pixS = d3dProc.LoadShader ("shaders.fx",
-												 "PShader",
-												 SHADER_PIXEL);
 
 		d3dProc.AttachShaderToObject (particles, vertS);
 		d3dProc.AttachShaderToObject (particles, pixS);
@@ -111,7 +111,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 			// SCENE PROCESSING
 			ProcessShaderData (&ray);
 
-			/*obj->GetWorld () =*/ particles->GetWorld () *= XMMatrixRotationX (0.005f) * XMMatrixRotationY (0.01f) * XMMatrixRotationZ (0.015f);
+			obj->GetWorld () = particles->GetWorld () *= XMMatrixRotationX (0.005f) * XMMatrixRotationY (0.01f) * XMMatrixRotationZ (0.015f);
 			
 			d3dProc.SendCBToGS (camBuf);
 			ray.SendToGS ();
@@ -126,7 +126,8 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				time = 0.0;
 				frames = 0;
 			}
-			Sleep (100);
+			getchar ();
+			//Sleep (100);
 		}
 		FreeConsole ();
 	}
@@ -238,11 +239,11 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 
 	cube->AddIndexArray (mapping, sizeof (mapping) / sizeof (UINT));
 	
-	ShaderIndex_t vertS = proc->LoadShader ("shaders.hlsl",
+	ShaderIndex_t vertS = proc->LoadShader ("shaders.fx",
 										   "VShaderCube",
 										   SHADER_VERTEX);
 	proc->AttachShaderToObject (cube, vertS);
-	proc->AttachShaderToObject (cube, proc->LoadShader ("shaders.hlsl",
+	proc->AttachShaderToObject (cube, proc->LoadShader ("shaders.fx",
 														"PShader",
 														SHADER_PIXEL));
 
