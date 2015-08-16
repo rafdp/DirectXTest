@@ -46,8 +46,8 @@ int WINAPI WinMain (HINSTANCE hInstance,
 		ParticleSystem ps (-1.0f, 1.0f,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
-						   100000,
-						   0.0f, 0.75f, 1.0f, 0.05f,
+						   1000000,
+						   0.0f, 0.75f, 1.0f, 0.075f,
 						   0.01f);
 		printf ("Particles loaded\n");
 		XMFLOAT4 camPos = { 0.0f, 3.0f, 8.0f, 1.0f };
@@ -69,7 +69,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				 { 1.0f, 0.0f, 0.0f, 0.9f },
 				 { x_, y_, z_, 1.0f },
 				 { 0.1f - x_, -0.3f - y_, 0.5f - z_, 0.0f },
-				 0.1f, 1.0f, 1.0f);
+				 0.07f, 1.0f, 0.5f);
 
 		Direct3DObject* obj = GetCube (&d3dProc);
 
@@ -114,8 +114,15 @@ int WINAPI WinMain (HINSTANCE hInstance,
 			obj->GetWorld () = particles->GetWorld () *= XMMatrixRotationX (0.005f) * XMMatrixRotationY (0.01f) * XMMatrixRotationZ (0.015f);
 			
 			d3dProc.SendCBToGS (camBuf);
+			ray.SetRayOnly ();
+			ray.Update ();
 			ray.SendToGS ();
 			d3dProc.ProcessDrawing (&cam);
+
+			ray.SetAll ();
+			ray.Update ();
+			ray.SendToGS ();
+			d3dProc.ProcessDrawing (&cam, false);
 			d3dProc.Present ();
 			t.stop ();
 			frames++;
@@ -126,7 +133,6 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				time = 0.0;
 				frames = 0;
 			}
-			getchar ();
 			//Sleep (100);
 		}
 		FreeConsole ();

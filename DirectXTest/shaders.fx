@@ -18,6 +18,7 @@ cbuffer Ray : register(b2)
 	float  Range;
 	float  Pow;
 	float  Scale;
+	float RayOnly;
 }
 
 struct VS_OUTPUT
@@ -57,7 +58,7 @@ void GShader (point VS_OUTPUT input[1],
 	
 	float3 m0m1 = Position.xyz - input[0].worldPos.xyz;
 	float d = length (cross (m0m1, Direction.xyz)) / length (Direction.xyz);
-	if (d < Range)
+	if (RayOnly > 0.5f && d < Range)
 	{
 		float tempCos = cos (d / Range);
 		tempCos = pow (tempCos, Pow);
@@ -67,52 +68,54 @@ void GShader (point VS_OUTPUT input[1],
 		outputVert[2].color = colorEnd;
 
 		VS_OUTPUT outputVertNew[3];
+		if (tempCos > 0.5f)
+		{
+			float3 shift = float3 (Scale*0.02f*(sin (1024.0f * input[0].worldPos.x) / 2.0f + 0.5f),
+								   Scale*0.02f*(cos (1124.0f * input[0].worldPos.y) / 2.0f + 0.5f),
+								   Scale*0.02f*(sin (1224.0f * input[0].worldPos.z) / 2.0f + 0.5f));
 
-		float3 shift = float3 (Scale*0.02f*(sin (1024.0f * input[0].worldPos.x) / 2.0f + 0.5f),
-							   Scale*0.02f*(cos (1124.0f * input[0].worldPos.y) / 2.0f + 0.5f),
-							   Scale*0.02f*(sin (1224.0f * input[0].worldPos.z) / 2.0f + 0.5f));
-		
-		outputVertNew[0].worldPos = float4(input[0].worldPos.xyz + shift - (upAxis * 0.577f - rightAxis) * 0.01f * Scale, 1.0f);
-		outputVertNew[1].worldPos = float4(input[0].worldPos.xyz + shift - (upAxis * 0.577f + rightAxis) * 0.01f * Scale, 1.0f);
-		outputVertNew[2].worldPos = float4(input[0].worldPos.xyz + shift + (upAxis * 1.154f) * 0.01f * Scale, 1.0f);
+			outputVertNew[0].worldPos = float4(input[0].worldPos.xyz + shift - (upAxis * 0.577f - rightAxis) * 0.01f * Scale, 1.0f);
+			outputVertNew[1].worldPos = float4(input[0].worldPos.xyz + shift - (upAxis * 0.577f + rightAxis) * 0.01f * Scale, 1.0f);
+			outputVertNew[2].worldPos = float4(input[0].worldPos.xyz + shift + (upAxis * 1.154f) * 0.01f * Scale, 1.0f);
 
-		outputVertNew[0].position = mul (outputVertNew[0].worldPos, VP);
-		outputVertNew[1].position = mul (outputVertNew[1].worldPos, VP);
-		outputVertNew[2].position = mul (outputVertNew[2].worldPos, VP);
+			outputVertNew[0].position = mul (outputVertNew[0].worldPos, VP);
+			outputVertNew[1].position = mul (outputVertNew[1].worldPos, VP);
+			outputVertNew[2].position = mul (outputVertNew[2].worldPos, VP);
 
-		outputVertNew[0].color = colorEnd;
-		outputVertNew[1].color = colorEnd;
-		outputVertNew[2].color = colorEnd;
+			outputVertNew[0].color = colorEnd;
+			outputVertNew[1].color = colorEnd;
+			outputVertNew[2].color = colorEnd;
 
-		OutputStream.Append (outputVertNew[0]);
-		OutputStream.Append (outputVertNew[1]);
-		OutputStream.Append (outputVertNew[2]);
-		OutputStream.RestartStrip ();
-		
-		outputVertNew[0].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f - rightAxis - shift) * 0.01f * Scale, 1.0f);
-		outputVertNew[1].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f + rightAxis - shift) * 0.01f * Scale, 1.0f);
-		outputVertNew[2].worldPos = float4(input[0].worldPos.xyz + (upAxis * 1.154f - shift) * 0.01f * Scale, 1.0f);
+			OutputStream.Append (outputVertNew[0]);
+			OutputStream.Append (outputVertNew[1]);
+			OutputStream.Append (outputVertNew[2]);
+			OutputStream.RestartStrip ();
 
-		outputVertNew[0].position = mul (outputVertNew[0].worldPos, VP);
-		outputVertNew[1].position = mul (outputVertNew[1].worldPos, VP);
-		outputVertNew[2].position = mul (outputVertNew[2].worldPos, VP);
+			outputVertNew[0].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f - rightAxis - shift) * 0.01f * Scale, 1.0f);
+			outputVertNew[1].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f + rightAxis - shift) * 0.01f * Scale, 1.0f);
+			outputVertNew[2].worldPos = float4(input[0].worldPos.xyz + (upAxis * 1.154f - shift) * 0.01f * Scale, 1.0f);
 
-		outputVertNew[0].color = colorEnd;
-		outputVertNew[1].color = colorEnd;
-		outputVertNew[2].color = colorEnd;
+			outputVertNew[0].position = mul (outputVertNew[0].worldPos, VP);
+			outputVertNew[1].position = mul (outputVertNew[1].worldPos, VP);
+			outputVertNew[2].position = mul (outputVertNew[2].worldPos, VP);
 
-		OutputStream.Append (outputVertNew[0]);
-		OutputStream.Append (outputVertNew[1]);
-		OutputStream.Append (outputVertNew[2]);
-		OutputStream.RestartStrip ();
-
+			outputVertNew[0].color = colorEnd;
+			outputVertNew[1].color = colorEnd;
+			outputVertNew[2].color = colorEnd;
+			OutputStream.Append (outputVertNew[0]);
+			OutputStream.Append (outputVertNew[1]);
+			OutputStream.Append (outputVertNew[2]);
+			OutputStream.RestartStrip ();
+		}
 	}
 	else
+	if (RayOnly < 0.5f)
 	{
 		outputVert[0].color = input[0].color;
 		outputVert[1].color = input[0].color;
 		outputVert[2].color = input[0].color;
 	}
+	if (RayOnly > 0.5f) return;
 	
 	OutputStream.Append (outputVert[0]);
 	OutputStream.Append (outputVert[1]);

@@ -41,7 +41,7 @@ public:
 	Direct3DProcessor (WindowClass* wnd, uint8_t buffers = 1);
 	~Direct3DProcessor ();
 
-	void ProcessDrawing (Direct3DCamera* cam);
+	void ProcessDrawing (Direct3DCamera* cam, bool clean = true);
 	void Present ();
 
 	UINT AddDepthStencilState (bool enableDepth = true, 

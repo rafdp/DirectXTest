@@ -9,7 +9,7 @@ struct Ray
 	float range;
 	float pow;
 	float scale;
-	float pad;
+	float rayOnly;
 	UINT nConstantBuffer;
 	Direct3DProcessor* d3dProc;
 
@@ -25,6 +25,8 @@ struct Ray
 	void Update ();
 	void SendToVS ();
 	void SendToGS ();
+	void SetRayOnly ();
+	void SetAll ();
 };
 
 

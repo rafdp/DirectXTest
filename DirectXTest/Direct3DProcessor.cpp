@@ -84,15 +84,16 @@ Direct3DProcessor::~Direct3DProcessor ()
 #undef free
 }
 
-void Direct3DProcessor::ProcessDrawing (Direct3DCamera* cam)
+void Direct3DProcessor::ProcessDrawing (Direct3DCamera* cam, bool clean)
 {
 	BEGIN_EXCEPTION_HANDLING
+	if (clean)
 	deviceContext_->ClearRenderTargetView (currentBuffer_,
 										   D3DXCOLOR (0.0f, 
 													  0.0f, 
 													  0.0f, 
 													  0.0f));
-
+	if (clean)
 	deviceContext_->ClearDepthStencilView (depthStencilView_, 
 										   D3D11_CLEAR_DEPTH | 
 										   D3D11_CLEAR_STENCIL, 

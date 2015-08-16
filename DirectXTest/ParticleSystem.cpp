@@ -35,6 +35,15 @@ void Ray::SendToGS ()
 	d3dProc->SendCBToGS (nConstantBuffer);
 }
 
+void Ray::SetRayOnly ()
+{
+	rayOnly = 1.0f;
+}
+void Ray::SetAll ()
+{
+	rayOnly = 0.0f;
+}
+
 void ParticleSystem::ok ()
 {
 	DEFAULT_OK_BLOCK
