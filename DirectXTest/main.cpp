@@ -41,7 +41,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
-						   200000);
+						   1000000);
 		float x_ = rand () * 1.0f / RAND_MAX;
 		float y_ = rand () * 1.0f / RAND_MAX;
 		float z_ = rand () * 1.0f / RAND_MAX;
@@ -49,7 +49,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 		Raytracer raytracer (&ps, 2,
 							 { 0.0f, 0.8f, 1.0f, 0.075f },
 							 { 1.0f, 0.0f, 0.0f, 0.8f },
-							 3.0f, 1.0f, 0.07f,
+							 3.0f, 0.5f, 0.07f,
 							 { x_, y_, z_ },
 							 { 0.1f - x_, -0.3f - y_, 0.5f - z_ });
 
@@ -101,7 +101,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				printf ("Shaders reloaded\n");
 			}
 
-			//obj->GetWorld () = particles->GetWorld () *= XMMatrixRotationX (0.005f) * XMMatrixRotationY (0.01f) * XMMatrixRotationZ (0.015f);
+			obj->GetWorld () = particles->GetWorld () *= XMMatrixRotationX (0.005f) * XMMatrixRotationY (0.01f) * XMMatrixRotationZ (0.015f);
 			d3dProc.SendCBToGS (camBuf);
 			raytracer.PrepareToDraw0 ();
 			d3dProc.ProcessDrawing (&cam);

@@ -15,6 +15,18 @@ struct RaytracerCBData_t
 };
 #pragma pack (pop)
 
+struct ThreadData_t
+{
+	XMVECTOR* currentPos;
+	float range;
+	Vertex_t* data;
+	uint64_t size;
+	volatile bool read;
+	volatile uint8_t done;
+};
+
+DWORD WINAPI ThreadedRaytracing (void* ptr);
+
 
 class Raytracer : NZA_t
 {
@@ -51,3 +63,4 @@ public:
 	void PrepareToDraw1 ();
 	float& GetCosPow ();
 };
+

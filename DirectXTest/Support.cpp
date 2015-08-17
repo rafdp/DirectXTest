@@ -46,3 +46,16 @@ void _MessageBox (const char* text, ...)
 				 MB_OK);
 
 }
+
+
+void PrintfProgressBar (uint64_t progress, uint64_t full)
+{
+	double pg = progress * 1.0 / full;
+	_putch ('[');
+	for (int i = 0; i < pg * 50; i++)
+		_putch ('-');
+	for (int i = 0; i < (1 - pg) * 50 - 1; i++)
+		_putch (' ');
+	_putch (']');
+	_putch ('\r');
+}

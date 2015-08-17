@@ -38,20 +38,43 @@ Raytracer::~Raytracer ()
 	rayStartDir_ = {};
 }
 
+DWORD WINAPI ThreadedRaytracing (void* ptr)
+{
+	ThreadData_t& data = *reinterpret_cast<ThreadData_t*> (ptr);
+	ThreadData_t copy = data;
+	data.read = true;
+	XMVECTOR curPos = *copy.currentPos;
+	float distance = 0.0f;
+	for (uint64_t i = 0; i < copy.size; i++)
+	{
+		XMVECTOR d = XMVector3Length (XMVectorSet (copy.data[i].r,
+												   copy.data[i].g,
+												   copy.data[i].b,
+												   0.0f) - curPos);
+		XMStoreFloat (&distance, d);
+		if (distance < copy.range &&
+			(distance < copy.data[i].a ||
+			 copy.data[i].a < 0.1f))
+			 copy.data[i].a = distance + 0.2f;
+	}
+	data.done++;
+	return 0;
+}
+
 void Raytracer::TraceRay (float step)
 {
 	BEGIN_EXCEPTION_HANDLING 
 	UINT iterations = 0;
 	XMVECTOR currentPos = XMLoadFloat3 (&rayStartPos_);
 	XMVECTOR currentDir = XMLoadFloat3 (&rayStartDir_);
-	XMFLOAT3 conversion = {};
 	float distance = 0.0f;
 	std::vector<Vertex_t>& particles = ps_->particles_;
+	XMVECTOR d = XMVectorSet (0.0f, 0.0f, 0.0f, 0.0f);
 	
 	for (auto i = particles.begin ();
 			  i < particles.end ();
 			  i++)
-		i->a = 0.0f;
+		i->a = -1.0f;
 
 	while (true)
 	{
@@ -70,34 +93,73 @@ void Raytracer::TraceRay (float step)
 	}
 
 	printf ("Ray in cube\n");
-
 	iterations = 0;
 
+	XMVECTOR currentPosBak = currentPos;
+	XMVECTOR currentDirBak = currentDir;
 	while (true)
 	{
-		XMVECTOR d = XMVector3Length (currentPos);
+		d = XMVector3Length (currentPosBak);
 		XMStoreFloat (&distance, d);
 		if (distance > sqrt (3.0f)) break;
-
-		for (auto i = particles.begin ();
-		i < particles.end ();
-			i++)
-		{
-			XMVECTOR d = XMVector3Length (XMVectorSet (i->r, i->g, i->b, 0.0f) - currentPos);
-			XMStoreFloat (&distance, d);
-			if (distance < rayData_.range &&
-				(distance < i->a ||
-				 i->a < 0.1f))
-			{
-				i->a = distance + 0.2f;
-				//_MessageBox ("%f", distance);
-			}
-		}
-		currentPos += currentDir * step;
 		iterations++;
-		if (iterations > 100)
+		currentPosBak += currentDirBak * step;
+		if (iterations > 1000)
 			break;
 	}
+
+	UINT Niterations = iterations;
+	iterations = 0;
+
+	size_t size = particles.size ();
+	UINT threadsN = std::thread::hardware_concurrency ();
+	uint64_t sizeSingle = size / threadsN;
+	uint64_t shift = 0;
+	
+	ThreadData_t data = { &currentPos, rayData_.range };
+	
+	while (true)
+	{
+		PrintfProgressBar (iterations, Niterations);
+		d = XMVector3Length (currentPos);
+		XMStoreFloat (&distance, d);
+		if (distance >= sqrt (3.0f)) break;
+		data.done = 0;
+		for (uint8_t i = 0; i < threadsN - 1; i++)
+		{
+			data.data = particles.data () + shift;
+			data.size = sizeSingle;
+			data.read = false;
+
+			CreateThread (NULL, 
+						  0, 
+						  ThreadedRaytracing, 
+						  &data,
+						  0, 
+						  NULL);
+
+			while (!data.read);
+			shift += sizeSingle;
+		}
+		data.data = particles.data () + shift;
+		data.size = size - shift;
+		CreateThread (NULL,
+					  0,
+					  ThreadedRaytracing,
+					  &data,
+					  0,
+					  NULL);
+
+		while (data.done != 4);
+
+		currentPos += currentDir * step;
+		iterations++;
+
+		shift = 0;
+		if (iterations > 1000)
+			break;
+	}
+	_putch ('\n');
 	END_EXCEPTION_HANDLING (TRACE_RAY)
 }
 

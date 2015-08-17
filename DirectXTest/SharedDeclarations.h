@@ -113,6 +113,7 @@ const UINT     CONST_WINDOW_STYLE = WS_MINIMIZEBOX | WS_BORDER | WS_CAPTION | WS
 
 std::string& CreateStringOnFail (const char* text, ...);
 void _MessageBox (const char* text, ...);
+void PrintfProgressBar (uint64_t progress, uint64_t full);
 
 const UINT SCREEN_WIDTH  = GetSystemMetrics (SM_CXSCREEN);
 const UINT SCREEN_HEIGHT = GetSystemMetrics (SM_CYSCREEN);

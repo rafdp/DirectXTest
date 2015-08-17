@@ -190,17 +190,17 @@ GSInput ParticleSystemVShader (float4 inColor : COLOR)
 	GSInput ret;
 	ret.worldPos = mul (float4(inColor.xyz, 1.0f), World);
 	ret.worldPos.w = Scale;
-	if (RayOnly > 0.5f && inColor.a < 0.1f)
+	if (RayOnly > 0.5f && inColor.a < -0.5f)
 	{
-		ret.color.a = 0.0f;
+		ret.color.r = -1.0f;
 		return ret;
 	}
-	if (RayOnly > 0.5f && inColor.a > 0.1f)
+	if (RayOnly > 0.5f && inColor.a > -0.5f)
 	{
-		float tempCos = cos ((inColor.a - 0.2f) / RayRange);
+		float tempCos = cos (inColor.a / RayRange);
 		tempCos = pow (tempCos, CosPow);
 		if (tempCos < 0.5f)
-			ret.color.a = 0.0f;
+			ret.color.r = -1.0f;
 		else
 		{
 			ret.worldPos.w *= -1.0f;
@@ -210,10 +210,10 @@ GSInput ParticleSystemVShader (float4 inColor : COLOR)
 	}
 	if (RayOnly < 0.5f)
 	{
-		if (inColor.a < 0.1f)
+		if (inColor.a < -0.5f)
 			ret.color = PointColor;
 		else 
-			ret.color.a = 0.0f;
+			ret.color.r = -1.0f;
 		return ret;
 	}
 	return ret;
@@ -223,14 +223,14 @@ GSInput ParticleSystemVShader (float4 inColor : COLOR)
 void ParticleSystemGShader (point GSInput input[1],
 							inout TriangleStream<PSInput> OutputStream)
 {
-	if (input[0].color.a < 0.01f) return;
+	if (input[0].color.r < -0.5f) return;
 
 	float3 normal = normalize (CamPos.xyz - input[0].worldPos.xyz);
 	float zPerpendicular = -normal.y / normal.z;
 	float3 upAxis = normalize (float3 (0.0f, 1.0f, zPerpendicular));
 	float3 rightAxis = normalize (cross (normal, upAxis));
-	float scale = abs (input[0].worldPos.a);
-	if (input[0].worldPos.a < 0.0f) scale *= 1.5;
+	float scale = abs (input[0].worldPos.w);
+	if (input[0].worldPos.w < -0.5f) scale *= 1.5;
 	scale /= 100.0f;
 
 	PSInput outputVert[4];
@@ -249,7 +249,7 @@ void ParticleSystemGShader (point GSInput input[1],
 		outputVert[i1].color = input[0].color;
 		OutputStream.Append (outputVert[i1]);
 	}
-	if (input[0].worldPos.a > 0.0f) return;
+	if (input[0].worldPos.w > 0.0f) return;
 	OutputStream.RestartStrip ();
 
 
