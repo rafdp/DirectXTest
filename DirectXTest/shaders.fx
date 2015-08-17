@@ -60,19 +60,19 @@ void GShader (point VS_OUTPUT input[1],
 
 	if (RayOnly < 0.5f && d > Range)
 	{
-		for (uint i = 0; i < 4; i++)
+		for (uint i0 = 0; i0 < 4; i0++)
 		{
 			
-			outputVert[i].position = mul (float4(input[0].worldPos.xyz -
-												 ((i < 2 ? (+1) : (-1)) * upAxis +
-												  ((i == 1 || i == 3) ? (+1) : (-1)) * rightAxis) * 0.01f * Scale, 1.0f),
+			outputVert[i0].position = mul (float4(input[0].worldPos.xyz -
+												 ((i0 < 2 ? (+1) : (-1)) * upAxis +
+												  ((i0 == 1 || i0 == 3) ? (+1) : (-1)) * rightAxis) * 0.01f * Scale, 1.0f),
 										  VP);
-			outputVert[i].texCoord = float4 ((i == 1 || i == 3) ? 0.0f : 1.0f,
-											(i < 2) ? 0.0f : 1.0f, 
-											 0.0f, 
-											 0.0f);
-			outputVert[i].color = input[0].color;
-			OutputStream.Append (outputVert[i]);
+			outputVert[i0].texCoord = float4 ((i0 == 1 || i0 == 3) ? 0.0f : 1.0f,
+											  (i0 < 2) ? 0.0f : 1.0f, 
+											  0.0f, 
+											  0.0f);
+			outputVert[i0].color = input[0].color;
+			OutputStream.Append (outputVert[i0]);
 		}
 	}
 	
@@ -83,41 +83,41 @@ void GShader (point VS_OUTPUT input[1],
 		if (tempCos < 0.5f) return;
 		float4 colorEnd = Color * tempCos + input[0].color * (1 - tempCos);
 
-		for (uint i = 0; i < 4; i++)
+		for (uint i1 = 0; i1 < 4; i1++)
 		{
-			outputVert[i].position = mul (float4(input[0].worldPos.xyz -
-												 ((i < 2 ? (+1) : (-1)) * upAxis +
-												 ((i == 1 || i == 3) ? (+1) : (-1)) * rightAxis) * 0.015f * Scale, 1.0f),
+			outputVert[i1].position = mul (float4(input[0].worldPos.xyz -
+												 ((i1 < 2 ? (+1) : (-1)) * upAxis +
+												 ((i1 == 1 || i1 == 3) ? (+1) : (-1)) * rightAxis) * 0.015f * Scale, 1.0f),
 											 VP);
-			outputVert[i].texCoord = float4 ((i == 1 || i == 3) ? 0.0f : 1.0f,
-											(i < 2) ? 0.0f : 1.0f,
-											 0.0f,
-											 0.0f);
-			outputVert[i].color = colorEnd;
-			OutputStream.Append (outputVert[i]);
+			outputVert[i1].texCoord = float4 ((i1 == 1 || i1 == 3) ? 0.0f : 1.0f,
+											  (i1 < 2) ? 0.0f : 1.0f,
+											  0.0f,
+											  0.0f);
+			outputVert[i1].color = colorEnd;
+			OutputStream.Append (outputVert[i1]);
 		}
 		OutputStream.RestartStrip ();
 		
 		float3 shift = float3 (Scale*0.02f*(sin (1024.0f * input[0].worldPos.x) / 2.0f + 0.5f),
 							   Scale*0.02f*(cos (1124.0f * input[0].worldPos.y) / 2.0f + 0.5f),
 							   Scale*0.02f*(sin (1224.0f * input[0].worldPos.z) / 2.0f + 0.5f));
-		for (uint i = 0; i < 4; i++)
+		for (uint i2 = 0; i2 < 4; i2++)
 		{
-			outputVert[i].position = mul (float4(input[0].worldPos.xyz + shift -
-												 ((i < 2 ? (+1) : (-1)) * upAxis +
-												 ((i == 0 || i == 3) ? (+1) : (-1)) * rightAxis) * 0.015f * Scale, 1.0f),
+			outputVert[i2].position = mul (float4(input[0].worldPos.xyz + shift -
+												  ((i2 < 2 ? (+1) : (-1)) * upAxis +
+												  ((i2 == 0 || i2 == 3) ? (+1) : (-1)) * rightAxis) * 0.015f * Scale, 1.0f),
 												VP);
-			OutputStream.Append (outputVert[i]);
+			OutputStream.Append (outputVert[i2]);
 		}
 		OutputStream.RestartStrip ();
 
-		for (uint i = 0; i < 4; i++)
+		for (uint i3 = 0; i3 < 4; i3++)
 		{
-			outputVert[i].position = mul (float4(input[0].worldPos.xyz - shift -
-												 ((i < 2 ? (+1) : (-1)) * upAxis +
-												 ((i == 0 || i == 3) ? (+1) : (-1)) * rightAxis) * 0.015f * Scale, 1.0f),
+			outputVert[i3].position = mul (float4(input[0].worldPos.xyz - shift -
+												 ((i3 < 2 ? (+1) : (-1)) * upAxis +
+												 ((i3 == 0 || i3 == 3) ? (+1) : (-1)) * rightAxis) * 0.015f * Scale, 1.0f),
 												VP);
-			OutputStream.Append (outputVert[i]);
+			OutputStream.Append (outputVert[i3]);
 		}
 		OutputStream.RestartStrip ();
 	}
@@ -157,7 +157,8 @@ VS_OUTPUT VShader (float4 inPos : POSITION, float4 inColor : COLOR)
 
 float4 PShader (PS_INPUT input) : SV_TARGET
 {
-	float4 diffuse = ObjTexture.Sample (ObjSamplerState, input.texCoord);
+	float4 diffuse = ObjTexture.Sample (ObjSamplerState, 
+										input.texCoord.xy);
 	clip (diffuse.a - .2);
 
 	float3 finalColor = diffuse.xyz * input.color.xyz;

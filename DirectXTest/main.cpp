@@ -27,7 +27,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 	{
 		printf ("Loading particles...\n");
 
-		WindowClass window (SCREEN_WIDTH * 0.75f, SCREEN_HEIGHT * 0.75f);
+		WindowClass window (int(SCREEN_WIDTH * 0.75f), int(SCREEN_HEIGHT * 0.75f));
 		Direct3DProcessor d3dProc (&window);
 		d3dProc.ApplyBlendState (d3dProc.AddBlendState (true));
 
@@ -46,13 +46,13 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				 { 1.0f, 0.0f, 0.0f, 0.9f },
 				 { x_, y_, z_, 1.0f },
 				 { 0.1f - x_, -0.3f - y_, 0.5f - z_, 0.0f },
-				 0.07f, 1.0f, 0.3f);
+				 0.07f, 1.0f, 0.7f);
 
 		ParticleSystem ps (particles, &d3dProc, &ray,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
-						   500000,
+						   1000000,
 						   0.0f, 0.75f, 1.0f, 0.15f,
 						   0.01f);
 		printf ("Particles loaded\n");
