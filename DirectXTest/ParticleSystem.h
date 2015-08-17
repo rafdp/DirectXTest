@@ -32,21 +32,32 @@ struct Ray
 
 class ParticleSystem : NZA_t
 {
-	std::vector<Vertex_t> particles;
+	std::vector<Vertex_t> particles_;
+	Direct3DObject* object_;
+	Direct3DProcessor* proc_;
+	Ray* ray_;
+	UINT samplerN_;
+	UINT textureN_;
 
 public:
 
 	void ok ();
 
-	ParticleSystem (float xMin, float xMax,
+	ParticleSystem (Direct3DObject* drawing,
+					Direct3DProcessor* proc,
+					Ray* ray,
+					float xMin, float xMax,
 					float yMin, float yMax,
 					float zMin, float zMax,
 					UINT quantity,
 					float r, float g, float b, float a,
 					float colorScatter = 0.0f);
+
 	~ParticleSystem ();
 
-	void DumpToObject (Direct3DObject* drawing);
+
+	void PrepareToDraw0 ();
+	void PrepareToDraw1 ();
 	/*
 	void ApplyRay (float r, float g, float b,
 				   float x, float y, float z,

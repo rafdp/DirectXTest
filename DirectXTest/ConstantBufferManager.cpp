@@ -22,10 +22,10 @@ Direct3DConstantBufferManager::~Direct3DConstantBufferManager ()
 	buffers_.clear ();
 }
 
-UINT Direct3DConstantBufferManager::Bind (void* data,
-										  size_t size, 
-										  UINT slot,
-										  ID3D11Device* device)
+ConstantBufferIndex_t Direct3DConstantBufferManager::Bind (void* data,
+														   size_t size, 
+														   UINT slot,
+														   ID3D11Device* device)
 {
 	BEGIN_EXCEPTION_HANDLING
 	BufferInfo_t newBuffer = {nullptr, data, slot};
@@ -51,7 +51,8 @@ UINT Direct3DConstantBufferManager::Bind (void* data,
 	END_EXCEPTION_HANDLING (BIND)
 }
 
-void Direct3DConstantBufferManager::Update (UINT n, ID3D11DeviceContext* deviceContext)
+void Direct3DConstantBufferManager::Update (ConstantBufferIndex_t n,
+											ID3D11DeviceContext* deviceContext)
 {
 	deviceContext->UpdateSubresource (buffers_[n].buffer,
 									  0,
@@ -60,21 +61,24 @@ void Direct3DConstantBufferManager::Update (UINT n, ID3D11DeviceContext* deviceC
 									  0,
 									  0);
 }
-void  Direct3DConstantBufferManager::SendVSBuffer (UINT n, ID3D11DeviceContext* deviceContext)
+void  Direct3DConstantBufferManager::SendVSBuffer (ConstantBufferIndex_t n, 
+												   ID3D11DeviceContext* deviceContext)
 {
 	deviceContext->VSSetConstantBuffers (buffers_[n].slot,
 										 1,
 										 &buffers_[n].buffer);
 }
 
-void  Direct3DConstantBufferManager::SendPSBuffer (UINT n, ID3D11DeviceContext* deviceContext)
+void  Direct3DConstantBufferManager::SendPSBuffer (ConstantBufferIndex_t n, 
+												   ID3D11DeviceContext* deviceContext)
 {
 	deviceContext->PSSetConstantBuffers (buffers_[n].slot,
 										 1,
 										 &buffers_[n].buffer);
 }
 
-void  Direct3DConstantBufferManager::SendGSBuffer (UINT n, ID3D11DeviceContext* deviceContext)
+void  Direct3DConstantBufferManager::SendGSBuffer (ConstantBufferIndex_t n, 
+												   ID3D11DeviceContext* deviceContext)
 {
 	deviceContext->GSSetConstantBuffers (buffers_[n].slot,
 										 1,

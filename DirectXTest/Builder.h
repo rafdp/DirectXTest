@@ -7,6 +7,7 @@
 #include "Window.h"
 #include "ConstantBufferManager.h"
 #include "ShaderManager.h"
+#include "TextureManager.h"
 #include "Object.h"
 #include "Direct3DProcessor.h"
 #include "ParticleSystem.h"

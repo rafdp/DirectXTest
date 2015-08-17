@@ -23,7 +23,7 @@ struct ShaderDesc_t
 class Direct3DShaderManager : NZA_t
 {
 	std::vector<ShaderDesc_t>   shaders_;
-	std::map<std::string, UINT> loaded_;
+	std::map<std::string, ShaderIndex_t> loaded_;
 
 public:
 	Direct3DShaderManager ();

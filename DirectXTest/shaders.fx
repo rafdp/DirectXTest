@@ -28,10 +28,21 @@ struct VS_OUTPUT
 	float4 color : COLOR;
 };
 
+struct PS_INPUT
+{
+	float4 position : SV_POSITION;
+	float4 texCoord : TEXCOORD;
+	float4 color : COLOR;
+};
 
-[maxvertexcount (9)]
+
+Texture2D ObjTexture : register (t7);
+SamplerState ObjSamplerState : register (s7);
+
+
+[maxvertexcount (4)]
 void GShader (point VS_OUTPUT input[1],
-			  inout TriangleStream<VS_OUTPUT> OutputStream)
+			  inout TriangleStream<PS_INPUT> OutputStream)
 {
 	
 	float3 normal = normalize (CamPos.xyz - input[0].worldPos.xyz);
@@ -39,87 +50,77 @@ void GShader (point VS_OUTPUT input[1],
 	float3 upAxis = normalize (float3 (0.0f, 1.0f, zPerpendicular));
 	float3 rightAxis = normalize (cross (normal, upAxis));
 	
-	VS_OUTPUT outputVert[3];
-	outputVert[0].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f - rightAxis) * 0.01f * Scale, 1.0f);
-	outputVert[1].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f + rightAxis) * 0.01f * Scale, 1.0f);
-	outputVert[2].worldPos = float4(input[0].worldPos.xyz + (upAxis * 1.154f) * 0.01f * Scale, 1.0f);
+	PS_INPUT outputVert[4];
 	
-	//outputVert[0].worldPos = float4(input[0].worldPos.xyz + float3 (0.05f, 0.0f, 0.0f), 1.0f);
-	//outputVert[1].worldPos = float4(input[0].worldPos.xyz + float3 (0.0f, 0.05f, 0.0f), 1.0f);
-	//outputVert[2].worldPos = float4(input[0].worldPos.xyz + float3 (0.0f, 0.0f, 0.05f), 1.0f);
-
-	//outputVert[0].worldPos = input[0].worldPos;
-	//outputVert[1].worldPos = input[0].worldPos;
-	//outputVert[2].worldPos = input[0].worldPos;
-
-	outputVert[0].position = mul (outputVert[0].worldPos, VP);
-	outputVert[1].position = mul (outputVert[1].worldPos, VP);
-	outputVert[2].position = mul (outputVert[2].worldPos, VP);
+		
 	
 	float3 m0m1 = Position.xyz - input[0].worldPos.xyz;
 	float d = length (cross (m0m1, Direction.xyz)) / length (Direction.xyz);
+	//OutputStream.Append (input[0]);
+
+	if (RayOnly < 0.5f && d > Range)
+	{
+		for (uint i = 0; i < 4; i++)
+		{
+			
+			outputVert[i].position = mul (float4(input[0].worldPos.xyz -
+												 ((i < 2 ? (+1) : (-1)) * upAxis +
+												  ((i == 1 || i == 3) ? (+1) : (-1)) * rightAxis) * 0.01f * Scale, 1.0f),
+										  VP);
+			outputVert[i].texCoord = float4 ((i == 1 || i == 3) ? 0.0f : 1.0f,
+											(i < 2) ? 0.0f : 1.0f, 
+											 0.0f, 
+											 0.0f);
+			outputVert[i].color = input[0].color;
+			OutputStream.Append (outputVert[i]);
+		}
+	}
+	
 	if (RayOnly > 0.5f && d < Range)
 	{
 		float tempCos = cos (d / Range);
 		tempCos = pow (tempCos, Pow);
+		if (tempCos < 0.5f) return;
 		float4 colorEnd = Color * tempCos + input[0].color * (1 - tempCos);
-		outputVert[0].color = colorEnd;
-		outputVert[1].color = colorEnd;
-		outputVert[2].color = colorEnd;
 
-		VS_OUTPUT outputVertNew[3];
-		if (tempCos > 0.5f)
+		for (uint i = 0; i < 4; i++)
 		{
-			float3 shift = float3 (Scale*0.02f*(sin (1024.0f * input[0].worldPos.x) / 2.0f + 0.5f),
-								   Scale*0.02f*(cos (1124.0f * input[0].worldPos.y) / 2.0f + 0.5f),
-								   Scale*0.02f*(sin (1224.0f * input[0].worldPos.z) / 2.0f + 0.5f));
-
-			outputVertNew[0].worldPos = float4(input[0].worldPos.xyz + shift - (upAxis * 0.577f - rightAxis) * 0.01f * Scale, 1.0f);
-			outputVertNew[1].worldPos = float4(input[0].worldPos.xyz + shift - (upAxis * 0.577f + rightAxis) * 0.01f * Scale, 1.0f);
-			outputVertNew[2].worldPos = float4(input[0].worldPos.xyz + shift + (upAxis * 1.154f) * 0.01f * Scale, 1.0f);
-
-			outputVertNew[0].position = mul (outputVertNew[0].worldPos, VP);
-			outputVertNew[1].position = mul (outputVertNew[1].worldPos, VP);
-			outputVertNew[2].position = mul (outputVertNew[2].worldPos, VP);
-
-			outputVertNew[0].color = colorEnd;
-			outputVertNew[1].color = colorEnd;
-			outputVertNew[2].color = colorEnd;
-
-			OutputStream.Append (outputVertNew[0]);
-			OutputStream.Append (outputVertNew[1]);
-			OutputStream.Append (outputVertNew[2]);
-			OutputStream.RestartStrip ();
-
-			outputVertNew[0].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f - rightAxis - shift) * 0.01f * Scale, 1.0f);
-			outputVertNew[1].worldPos = float4(input[0].worldPos.xyz - (upAxis * 0.577f + rightAxis - shift) * 0.01f * Scale, 1.0f);
-			outputVertNew[2].worldPos = float4(input[0].worldPos.xyz + (upAxis * 1.154f - shift) * 0.01f * Scale, 1.0f);
-
-			outputVertNew[0].position = mul (outputVertNew[0].worldPos, VP);
-			outputVertNew[1].position = mul (outputVertNew[1].worldPos, VP);
-			outputVertNew[2].position = mul (outputVertNew[2].worldPos, VP);
-
-			outputVertNew[0].color = colorEnd;
-			outputVertNew[1].color = colorEnd;
-			outputVertNew[2].color = colorEnd;
-			OutputStream.Append (outputVertNew[0]);
-			OutputStream.Append (outputVertNew[1]);
-			OutputStream.Append (outputVertNew[2]);
-			OutputStream.RestartStrip ();
+			outputVert[i].position = mul (float4(input[0].worldPos.xyz -
+												 ((i < 2 ? (+1) : (-1)) * upAxis +
+												 ((i == 1 || i == 3) ? (+1) : (-1)) * rightAxis) * 0.015f * Scale, 1.0f),
+											 VP);
+			outputVert[i].texCoord = float4 ((i == 1 || i == 3) ? 0.0f : 1.0f,
+											(i < 2) ? 0.0f : 1.0f,
+											 0.0f,
+											 0.0f);
+			outputVert[i].color = colorEnd;
+			OutputStream.Append (outputVert[i]);
 		}
+		OutputStream.RestartStrip ();
+		
+		float3 shift = float3 (Scale*0.02f*(sin (1024.0f * input[0].worldPos.x) / 2.0f + 0.5f),
+							   Scale*0.02f*(cos (1124.0f * input[0].worldPos.y) / 2.0f + 0.5f),
+							   Scale*0.02f*(sin (1224.0f * input[0].worldPos.z) / 2.0f + 0.5f));
+		for (uint i = 0; i < 4; i++)
+		{
+			outputVert[i].position = mul (float4(input[0].worldPos.xyz + shift -
+												 ((i < 2 ? (+1) : (-1)) * upAxis +
+												 ((i == 0 || i == 3) ? (+1) : (-1)) * rightAxis) * 0.015f * Scale, 1.0f),
+												VP);
+			OutputStream.Append (outputVert[i]);
+		}
+		OutputStream.RestartStrip ();
+
+		for (uint i = 0; i < 4; i++)
+		{
+			outputVert[i].position = mul (float4(input[0].worldPos.xyz - shift -
+												 ((i < 2 ? (+1) : (-1)) * upAxis +
+												 ((i == 0 || i == 3) ? (+1) : (-1)) * rightAxis) * 0.015f * Scale, 1.0f),
+												VP);
+			OutputStream.Append (outputVert[i]);
+		}
+		OutputStream.RestartStrip ();
 	}
-	else
-	if (RayOnly < 0.5f)
-	{
-		outputVert[0].color = input[0].color;
-		outputVert[1].color = input[0].color;
-		outputVert[2].color = input[0].color;
-	}
-	if (RayOnly > 0.5f) return;
-	
-	OutputStream.Append (outputVert[0]);
-	OutputStream.Append (outputVert[1]);
-	OutputStream.Append (outputVert[2]);
 }
 
 float4 main () : SV_TARGET
@@ -154,15 +155,13 @@ VS_OUTPUT VShader (float4 inPos : POSITION, float4 inColor : COLOR)
 	return output;
 }
 
-float4 PShader (VS_OUTPUT input) : SV_TARGET
+float4 PShader (PS_INPUT input) : SV_TARGET
 {
-	return input.color;
-}
+	float4 diffuse = ObjTexture.Sample (ObjSamplerState, input.texCoord);
+	clip (diffuse.a - .2);
 
-float rand (in float2 uv)
-{
-	float2 noise = (frac (sin (dot (uv, float2(12.9898, 78.233)*2.0)) * 43758.5453));
-	return abs (noise.x + noise.y) * 0.5;
+	float3 finalColor = diffuse.xyz * input.color.xyz;
+	return float4 (finalColor, input.color.a * diffuse.a);
 }
 
 VS_OUTPUT VShaderCube (float4 inPos : POSITION, float4 inColor : COLOR)
@@ -173,4 +172,9 @@ VS_OUTPUT VShaderCube (float4 inPos : POSITION, float4 inColor : COLOR)
 	output.color = inColor;
 
 	return output;
+}
+
+float4 PShaderCube (VS_OUTPUT input) : SV_TARGET
+{
+	return input.color;
 }

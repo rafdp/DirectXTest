@@ -49,18 +49,34 @@ void ParticleSystem::ok ()
 	DEFAULT_OK_BLOCK
 }
 
-ParticleSystem::ParticleSystem (float xMin, float xMax,
+ParticleSystem::ParticleSystem (Direct3DObject* drawing,
+								Direct3DProcessor* proc,
+								Ray* ray,
+								float xMin, float xMax,
 								float yMin, float yMax,
 								float zMin, float zMax,
 								UINT quantity,
 								float r, float g, float b, float a,
 								float colorScatter)
 try :
-	particles ()
+	particles_ (),
+	object_    (drawing),
+	proc_      (proc),
+	ray_       (ray),
+	samplerN_  (),
+	textureN_  ()
 {
+	if (object_ == nullptr)
+		_EXC_N (NULL_OBJECT, "ParticleSystem: Got null Direct3DObject pointer")
+	if (proc_ == nullptr)
+		_EXC_N (NULL_OBJECT, "ParticleSystem: Got null Direct3DProcessor pointer")
+	if (ray_ == nullptr)
+		_EXC_N (NULL_OBJECT, "ParticleSystem: Got null Ray pointer")
+
+
 	Vertex_t vertex = {};
 	XMFLOAT3 color = {};
-	particles.reserve (quantity + 1);
+	particles_.reserve (quantity + 1);
 	for (UINT i = 0; i < quantity; i++)
 	{
 		vertex.x = (rand () * 1.0f / RAND_MAX) * (xMax - xMin) + xMin;
@@ -78,21 +94,69 @@ try :
 #undef RAND_COLOR
 
 		vertex.SetColor (color.x, color.y, color.z, a);
-		particles.push_back (vertex);
+		particles_.push_back (vertex);
 	}
+
+	textureN_ = proc_->LoadTexture ("ParticleTexture.png");
+	object_->AddVertexArray (particles_.data (),
+							 particles_.size ());
+	ShaderIndex_t vertS = proc_->LoadShader ("shaders.fx",
+											"VShader",
+											SHADER_VERTEX);
+
+	ShaderIndex_t pixS = proc_->LoadShader ("shaders.fx",
+										   "PShader",
+										   SHADER_PIXEL);
+
+	ShaderIndex_t geoS = proc_->LoadShader ("shaders.fx",
+											"GShader",
+											SHADER_GEOMETRY);
+	proc_->RegisterObject (object_);
+
+	UINT layoutN = proc_->AddLayout (vertS,
+									true,
+									false,
+									false,
+									true);
+
+	proc_->SetLayout (object_, layoutN);
+
+	proc_->AttachShaderToObject (object_, vertS);
+	proc_->AttachShaderToObject (object_, pixS);
+	proc_->AttachShaderToObject (object_, geoS);
+
+	samplerN_ = proc->AddSamplerState ();
 }
 _END_EXCEPTION_HANDLING (CTOR)
 
 ParticleSystem::~ParticleSystem ()
 {
-	particles.clear ();
+	particles_.clear ();
+	object_ = nullptr;
 }
 
-void ParticleSystem::DumpToObject (Direct3DObject* drawing)
+void ParticleSystem::PrepareToDraw0 ()
 {
-	drawing->AddVertexArray (particles.data (), 
-							 particles.size ());
+	BEGIN_EXCEPTION_HANDLING 
+	ray_->SetRayOnly ();
+	ray_->Update ();
+	ray_->SendToGS ();
+	proc_->SendTextureToPS (textureN_, 7);
+	proc_->SendSamplerStateToPS (samplerN_, 7);
+	END_EXCEPTION_HANDLING (PREPARE_TO_DRAW0)
 }
+
+void ParticleSystem::PrepareToDraw1 ()
+{
+	BEGIN_EXCEPTION_HANDLING
+	ray_->SetAll ();
+	ray_->Update ();
+	ray_->SendToGS ();
+	proc_->SendTextureToPS (textureN_, 7);
+	proc_->SendSamplerStateToPS (samplerN_, 7);
+	END_EXCEPTION_HANDLING (PREPARE_TO_DRAW1)
+}
+
 /*
 void ParticleSystem::ApplyRay (float r, float g, float b,
 							   float x, float y, float z,

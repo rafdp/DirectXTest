@@ -127,7 +127,9 @@ ShaderIndex_t Direct3DShaderManager::LoadShader (std::string filename,
 	if (result != S_OK)
 		_EXC_N (CREATE_SHADER, "Failed to create %s shader from blob" _ name.c_str ())
 
-	return shaders_.size () - 1;
+	ShaderIndex_t index = shaders_.size () - 1;
+	loaded_[storing] = index;
+	return index;
 	END_EXCEPTION_HANDLING (LOAD_SHADER)
 }
 

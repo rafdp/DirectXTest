@@ -19,6 +19,7 @@ class Direct3DProcessor : NZA_t
 	std::vector<ID3D11DepthStencilState*> depthStencilStates_;
 	std::vector<ID3D11RasterizerState*>   rasterizerStates_;
 	std::vector<ID3D11BlendState*>        blendStates_;
+	std::vector<ID3D11SamplerState*>      samplerStates_;
 	std::vector<ID3D11InputLayout*>       layouts_;
 
 	std::vector<Direct3DObject*> objects_;
@@ -26,13 +27,16 @@ class Direct3DProcessor : NZA_t
 	ShaderIndex_t				 currentVertexShader_;
 	ShaderIndex_t                currentPixelShader_;
 	ShaderIndex_t				 currentGeometryShader_;
+	UINT						 currentLayout_;
 
 	Direct3DConstantBufferManager cbManager_;
+	Direct3DTextureManager        textureManager_;
 
 	void InitDeviceAndSwapChain ();
 	void InitViewport ();
 	void InitDepthStencilView ();
 	void EnableShader (ShaderIndex_t desc);
+	void EnableObjectSettings (Direct3DObject* obj);
 	
 
 public:
@@ -56,6 +60,9 @@ public:
 
 	UINT AddBlendState (bool blend = false);
 	void ApplyBlendState (UINT n);
+
+	UINT AddSamplerState (D3D11_TEXTURE_ADDRESS_MODE mode = D3D11_TEXTURE_ADDRESS_WRAP);
+	void SendSamplerStateToPS (UINT n, UINT slot);
 
 	void RegisterObject (Direct3DObject* obj);
 	std::vector<Direct3DObject*>& GetObjectsVector ();
@@ -88,4 +95,7 @@ public:
 	void SendCBToGS (UINT n);
 
 	void AttachShaderToObject (Direct3DObject* obj, ShaderIndex_t n);
+
+	TextureIndex_t LoadTexture (std::string filename);
+	void SendTextureToPS (TextureIndex_t index, UINT slot);
 };

@@ -69,7 +69,7 @@ Direct3DObject::Direct3DObject (XMMATRIX& world,
 	vertexShader_    (-1),
 	pixelShader_     (-1),
 	geometryShader_  (-1),
-	layoutN_         (0)
+	layoutN_         (-1)
 {}
 
 void Direct3DObject::SetCBManager (Direct3DConstantBufferManager* cbManager)

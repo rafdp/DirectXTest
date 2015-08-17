@@ -33,7 +33,9 @@ try :
 	currentVertexShader_   (-1),
 	currentPixelShader_    (-1),
 	currentGeometryShader_ (-1),
-	cbManager_             ()
+	currentLayout_         (-1),
+	cbManager_             (),
+	textureManager_        ()
 {
 	if (wnd == nullptr)
 		_EXC_N (NULL_WND,
@@ -103,6 +105,9 @@ void Direct3DProcessor::ProcessDrawing (Direct3DCamera* cam, bool clean)
 			  i < objects_.end ();
 			  i++)
 	{
+
+		EnableObjectSettings (*i);
+		/*
 		if ((*i)->vertexShader_ == -1)
 		{
 			deviceContext_->VSSetShader (nullptr, 0, 0);
@@ -125,7 +130,7 @@ void Direct3DProcessor::ProcessDrawing (Direct3DCamera* cam, bool clean)
 			currentGeometryShader_ = -1;
 		}
 		else
-			EnableShader ((*i)->geometryShader_);
+			EnableShader ((*i)->geometryShader_);*/
 		if ((*i)->blending_)
 		{
 			ApplyRasterizerState (1);
@@ -372,7 +377,7 @@ void Direct3DProcessor::ApplyRasterizerState (UINT n)
 				n _
 				rasterizerStates_.size ());
 	deviceContext_->RSSetState (rasterizerStates_[n]);
-	END_EXCEPTION_HANDLING (APPLY_DEPTH_STENCIL_STATE)
+	END_EXCEPTION_HANDLING (APPLY_RASTERIZER_STATE)
 }
 
 UINT Direct3DProcessor::AddBlendState (bool blend)
@@ -421,7 +426,47 @@ void Direct3DProcessor::ApplyBlendState (UINT n)
 				blendStates_.size ());
 
 	deviceContext_->OMSetBlendState (blendStates_[n], NULL, 0xFFFFFFFF);
-	END_EXCEPTION_HANDLING (APPLY_DEPTH_STENCIL_STATE)
+	END_EXCEPTION_HANDLING (APPLY_BLEND_STATE)
+}
+
+UINT Direct3DProcessor::AddSamplerState (D3D11_TEXTURE_ADDRESS_MODE mode)
+{
+	BEGIN_EXCEPTION_HANDLING
+
+	D3D11_SAMPLER_DESC samplerDesc = {};
+
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.AddressU = mode;
+	samplerDesc.AddressV = mode;
+	samplerDesc.AddressW = mode;
+	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	samplerDesc.MinLOD = 0;
+	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+	ID3D11SamplerState* newSamplerState = nullptr;
+
+	HRESULT result = S_OK;
+	result = device_->CreateSamplerState (&samplerDesc, &newSamplerState);
+	if (result != S_OK)
+		_EXC_N (CREATE_SAMPLER_STATE, "D3D: Failed to create sampler state")
+
+	samplerStates_.push_back (newSamplerState);
+
+	return samplerStates_.size () - 1;
+
+	END_EXCEPTION_HANDLING (ADD_SAMPLER_STATE)
+}
+
+void Direct3DProcessor::SendSamplerStateToPS (UINT n, UINT slot)
+{
+	BEGIN_EXCEPTION_HANDLING
+	if (n >= samplerStates_.size ())
+		_EXC_N (OUT_OF_RANGE, "D3D: Cannot apply sampler state (%d of %d available)" _
+				n _
+				samplerStates_.size ());
+
+	deviceContext_->PSSetSamplers (slot, 1, &samplerStates_[n]);
+	END_EXCEPTION_HANDLING (SEND_SAMPLER_STATE_TO_PS)
 }
 
 
@@ -515,7 +560,6 @@ UINT Direct3DProcessor::AddLayout (ShaderIndex_t desc,
 	 							   bool color)
 {
 	BEGIN_EXCEPTION_HANDLING
-		printf ("%d\n", shaderManager_.GetType (desc));
 	if (shaderManager_.GetType (desc) != SHADER_VERTEX)
 		_EXC_N (SHADER_TYPE, "D3D: Unable to create layout, invalid shader type")
 
@@ -584,6 +628,7 @@ void Direct3DProcessor::EnableLayout (UINT n)
 		_EXC_N (LAYOUT_INDEX, "D3D: Invalid layout index (%d of %d available)" _
 				n _
 				layouts_.size ())
+	if (n == currentLayout_) return;
 
 	deviceContext_->IASetInputLayout (layouts_[n]);
 
@@ -633,7 +678,6 @@ void Direct3DProcessor::SendCBToGS (UINT n)
 	cbManager_.SendGSBuffer (n, deviceContext_);
 }
 
-
 void Direct3DProcessor::AttachShaderToObject (Direct3DObject* obj, 
 											  ShaderIndex_t n)
 {
@@ -654,6 +698,62 @@ void Direct3DProcessor::AttachShaderToObject (Direct3DObject* obj,
 			obj->geometryShader_ = n;
 			break;
 	}
-
 	END_EXCEPTION_HANDLING (ATTACH_SHADER_TO_OBJECT)
+}
+
+TextureIndex_t Direct3DProcessor::LoadTexture (std::string filename)
+{
+	return textureManager_.LoadTexture (filename, device_);
+}
+
+
+void Direct3DProcessor::SendTextureToPS (TextureIndex_t index, UINT slot)
+{
+	BEGIN_EXCEPTION_HANDLING
+
+	ID3D11ShaderResourceView* srvPtr = textureManager_.GetTexture (index);
+
+	if (srvPtr == nullptr)
+		_EXC_N (NULL_RESOURCE_VIEW, "D3D: Got null resource view from texture manager")
+
+	deviceContext_->PSSetShaderResources (slot, 1, &srvPtr);
+
+	END_EXCEPTION_HANDLING (SEND_TEXTURE_TO_PS)
+}
+
+
+void Direct3DProcessor::EnableObjectSettings (Direct3DObject* obj)
+{
+	BEGIN_EXCEPTION_HANDLING
+	if (obj->vertexShader_ == -1)
+	{
+		deviceContext_->VSSetShader (nullptr, 0, 0);
+		currentVertexShader_ = -1;
+	}
+	else
+		EnableShader (obj->vertexShader_);
+
+	if (obj->pixelShader_ == -1)
+	{
+		deviceContext_->PSSetShader (nullptr, 0, 0);
+		currentPixelShader_ = -1;
+	}
+	else
+		EnableShader (obj->pixelShader_);
+
+	if (obj->geometryShader_ == -1)
+	{
+		deviceContext_->GSSetShader (nullptr, 0, 0);
+		currentGeometryShader_ = -1;
+	}
+	else
+		EnableShader (obj->geometryShader_);
+
+	if (obj->layoutN_ == -1)
+		_EXC_N (LAYOUT_NOT_SET, "D3D: Cannot draw object with no layout set")
+
+	EnableLayout (obj->layoutN_);
+
+
+	END_EXCEPTION_HANDLING (ENABLE_OBJECT_SETTINGS)
 }
