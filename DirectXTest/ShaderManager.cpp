@@ -10,6 +10,90 @@ bool Direct3DShaderManager::CheckShaderType (UINT n)
 	return true;
 }
 
+void Direct3DShaderManager::ReloadShaders (ID3D11Device* device)
+{
+	for (auto i = loaded_.begin ();
+	i != loaded_.end ();
+		i++)
+	{
+		std::string file (i->first.begin (),
+						  i->first.begin () + i->first.find (':'));
+
+		std::string shader (i->first.begin () + i->first.find (':') + 1,
+						    i->first.end ());
+
+		HRESULT result = S_OK;
+
+		//shaders_.push_back ({});
+		ShaderDesc_t& currShader = shaders_[i->second];
+
+		std::string version, name;
+		switch (shaders_[i->second].shaderType)
+		{
+			case SHADER_VERTEX:
+				version = "vs_4_0";
+				name = "vertex";
+				break;
+			case SHADER_PIXEL:
+				version = "ps_4_0";
+				name = "pixel";
+				break;
+			case SHADER_GEOMETRY:
+				version = "gs_4_0";
+				name = "geometry";
+				break;
+			default:
+				_EXC_N (SHADER_TYPE, "D3D: Invalid shader type, cannot load")
+		}
+
+
+		result = D3DX11CompileFromFileA (file.c_str (),
+										 0,
+										 0,
+										 shader.c_str (),
+										 version.c_str (),
+										 0,
+										 0,
+										 0,
+										 &currShader.blob,
+										 0,
+										 0);
+
+		if (result != S_OK)
+			_EXC_N (LOAD_SHADER_BLOB, "D3D: Failed to load %s shader (%s) from file (%s) (0x%x)" _
+					name.c_str () _
+					shader.c_str () _
+					file.c_str () _
+					result)
+
+			switch (shaders_[i->second].shaderType)
+			{
+				case SHADER_VERTEX:
+					result = device->CreateVertexShader (currShader.blob->GetBufferPointer (),
+														 currShader.blob->GetBufferSize (),
+														 NULL,
+														 reinterpret_cast <ID3D11VertexShader**> (&currShader.shader));
+					break;
+				case SHADER_PIXEL:
+					result = device->CreatePixelShader (currShader.blob->GetBufferPointer (),
+														currShader.blob->GetBufferSize (),
+														NULL,
+														reinterpret_cast <ID3D11PixelShader**> (&currShader.shader));
+					break;
+				case SHADER_GEOMETRY:
+					result = device->CreateGeometryShader (currShader.blob->GetBufferPointer (),
+														   currShader.blob->GetBufferSize (),
+														   NULL,
+														   reinterpret_cast <ID3D11GeometryShader**> (&currShader.shader));
+					break;
+				default:
+					break;
+			}
+		if (result != S_OK)
+			_EXC_N (CREATE_SHADER, "Failed to create %s shader from blob" _ name.c_str ())
+	}
+}
+
 void Direct3DShaderManager::ok ()
 {
 	DEFAULT_OK_BLOCK

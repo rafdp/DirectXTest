@@ -721,6 +721,14 @@ void Direct3DProcessor::SendTextureToPS (TextureIndex_t index, UINT slot)
 	END_EXCEPTION_HANDLING (SEND_TEXTURE_TO_PS)
 }
 
+void Direct3DProcessor::ReloadShaders ()
+{
+	shaderManager_.ReloadShaders (device_);
+	currentVertexShader_ = -1;
+	currentPixelShader_ = -1;
+	currentGeometryShader_ = -1;
+}
+
 
 void Direct3DProcessor::EnableObjectSettings (Direct3DObject* obj)
 {

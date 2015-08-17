@@ -4,7 +4,7 @@ ExceptionData_t* __EXPN__ = nullptr;
 
 Direct3DObject* GetCube (Direct3DProcessor* proc);
 
-void ProcessShaderData (Ray* ray);
+void ProcessShaderData (Raytracer* rt);
 
 
 
@@ -27,7 +27,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 	{
 		printf ("Loading particles...\n");
 
-		WindowClass window (int(SCREEN_WIDTH * 0.75f), int(SCREEN_HEIGHT * 0.75f));
+		WindowClass window (int(SCREEN_WIDTH * 0.5f), int(SCREEN_HEIGHT * 0.5f));
 		Direct3DProcessor d3dProc (&window);
 		d3dProc.ApplyBlendState (d3dProc.AddBlendState (true));
 
@@ -37,24 +37,22 @@ int WINAPI WinMain (HINSTANCE hInstance,
 		Direct3DObject* particles = new (GetValidObjectPtr ())
 			Direct3DObject (world, false, false, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
+		ParticleSystem ps (particles, &d3dProc,
+						   -1.0f, 1.0f,
+						   -1.0f, 1.0f,
+						   -1.0f, 1.0f,
+						   200000);
 		float x_ = rand () * 1.0f / RAND_MAX;
 		float y_ = rand () * 1.0f / RAND_MAX;
 		float z_ = rand () * 1.0f / RAND_MAX;
 
-		Ray ray (2,
-				 &d3dProc,
-				 { 1.0f, 0.0f, 0.0f, 0.9f },
-				 { x_, y_, z_, 1.0f },
-				 { 0.1f - x_, -0.3f - y_, 0.5f - z_, 0.0f },
-				 0.07f, 1.0f, 0.7f);
+		Raytracer raytracer (&ps, 2,
+							 { 0.0f, 0.8f, 1.0f, 0.075f },
+							 { 1.0f, 0.0f, 0.0f, 0.8f },
+							 3.0f, 1.0f, 0.07f,
+							 { x_, y_, z_ },
+							 { 0.1f - x_, -0.3f - y_, 0.5f - z_ });
 
-		ParticleSystem ps (particles, &d3dProc, &ray,
-						   -1.0f, 1.0f,
-						   -1.0f, 1.0f,
-						   -1.0f, 1.0f,
-						   1000000,
-						   0.0f, 0.75f, 1.0f, 0.15f,
-						   0.01f);
 		printf ("Particles loaded\n");
 		XMFLOAT4 camPos = { 0.0f, 3.0f, 8.0f, 1.0f };
 		Direct3DCamera cam (&window,
@@ -70,8 +68,16 @@ int WINAPI WinMain (HINSTANCE hInstance,
 
 		Direct3DObject* obj = GetCube (&d3dProc);
 
-		d3dProc.ProcessObjects ();
 		cam.Update ();
+
+		printf ("Tracing ray\n");
+		raytracer.TraceRay (0.05f);
+		printf ("Ray ready\n");
+
+		ps.DumpVerticesToObject ();
+
+
+		d3dProc.ProcessObjects ();
 
 		
 		MSG msg = {};
@@ -86,29 +92,31 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				if (msg.message == WM_QUIT) break;
 			}
 			// SCENE PROCESSING
-			ProcessShaderData (&ray);
+			ProcessShaderData (&raytracer);
 
-			obj->GetWorld () = particles->GetWorld () *= XMMatrixRotationX (0.005f) * XMMatrixRotationY (0.01f) * XMMatrixRotationZ (0.015f);
-			
-			ps.PrepareToDraw0 ();
+			if (GetAsyncKeyState (VK_MENU))
+			{
+				while (GetAsyncKeyState (VK_MENU));
+				d3dProc.ReloadShaders ();
+				printf ("Shaders reloaded\n");
+			}
 
+			//obj->GetWorld () = particles->GetWorld () *= XMMatrixRotationX (0.005f) * XMMatrixRotationY (0.01f) * XMMatrixRotationZ (0.015f);
 			d3dProc.SendCBToGS (camBuf);
-			
+			raytracer.PrepareToDraw0 ();
 			d3dProc.ProcessDrawing (&cam);
 
-			ps.PrepareToDraw1 ();
-
-			ray.SetAll ();
-			ray.Update ();
-			ray.SendToGS ();
+			d3dProc.SendCBToGS (camBuf);
+			raytracer.PrepareToDraw1 ();
 			d3dProc.ProcessDrawing (&cam, false);
 			d3dProc.Present ();
+
 			t.stop ();
 			frames++;
 			time += t.GetElapsedTime ("mks");
 			if (time >= 500000.0)
 			{
-				printf ("\r%f %d     ", ray.pow, frames * 2);
+				printf ("\r%f %d     ", raytracer.GetCosPow (), frames * 2);
 				time = 0.0;
 				frames = 0;
 			}
@@ -243,17 +251,17 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 	return cube;
 }
 
-void ProcessShaderData (Ray* ray)
+void ProcessShaderData (Raytracer* rt)
 {
 	if (GetAsyncKeyState (VK_UP) & 0x8000)
-		if (ray->pow < 10.0f) ray->pow += 0.1f;
+		if (rt->GetCosPow () < 10.0f) rt->GetCosPow () += 0.1f;
 	if (GetAsyncKeyState (VK_DOWN) & 0x8000)
-		if (ray->pow > -1.0f) ray->pow -= 0.1f;
-	for (int8_t i = 0; i < 9; i++)
-		if (GetAsyncKeyState ('0' + i)) ray->pow = i;
+		if (rt->GetCosPow () > -1.0f) rt->GetCosPow () -= 0.1f;
+	for (int8_t i = 0; i <= 9; i++)
+		if (GetAsyncKeyState ('0' + i)) rt->GetCosPow () = i;
 	if (GetAsyncKeyState (VK_RETURN) & 0x8000)
 	{
-		ray->Update ();
+		rt->Update ();
 		while (GetAsyncKeyState (VK_RETURN));
 	}
 }

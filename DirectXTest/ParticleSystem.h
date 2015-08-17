@@ -1,6 +1,6 @@
 #pragma once
 #include "includes.h"
-
+/*
 struct Ray
 {
 	XMFLOAT4 color;
@@ -29,15 +29,16 @@ struct Ray
 	void SetAll ();
 };
 
-
+*/
 class ParticleSystem : NZA_t
 {
 	std::vector<Vertex_t> particles_;
 	Direct3DObject* object_;
 	Direct3DProcessor* proc_;
-	Ray* ray_;
 	UINT samplerN_;
 	UINT textureN_;
+
+	friend class Raytracer;
 
 public:
 
@@ -45,19 +46,14 @@ public:
 
 	ParticleSystem (Direct3DObject* drawing,
 					Direct3DProcessor* proc,
-					Ray* ray,
 					float xMin, float xMax,
 					float yMin, float yMax,
 					float zMin, float zMax,
-					UINT quantity,
-					float r, float g, float b, float a,
-					float colorScatter = 0.0f);
+					UINT quantity);
 
 	~ParticleSystem ();
-
-
-	void PrepareToDraw0 ();
-	void PrepareToDraw1 ();
+	void PrepareToDraw ();
+	void DumpVerticesToObject ();
 	/*
 	void ApplyRay (float r, float g, float b,
 				   float x, float y, float z,

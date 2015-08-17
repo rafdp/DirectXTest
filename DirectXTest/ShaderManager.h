@@ -40,4 +40,5 @@ public:
 	ID3D10Blob* GetBlob (ShaderIndex_t n);
 	UINT GetType (ShaderIndex_t n);
 	bool CheckShaderType (UINT n);
+	void ReloadShaders (ID3D11Device* device);
 };

@@ -98,4 +98,6 @@ public:
 
 	TextureIndex_t LoadTexture (std::string filename);
 	void SendTextureToPS (TextureIndex_t index, UINT slot);
+
+	void ReloadShaders ();
 };

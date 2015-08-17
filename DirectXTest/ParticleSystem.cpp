@@ -1,6 +1,6 @@
 #include "Builder.h"
 
-
+/*
 Ray::Ray (UINT slot,
 		  Direct3DProcessor* d3dProc_,
 		  XMFLOAT4 color_,
@@ -43,26 +43,24 @@ void Ray::SetAll ()
 {
 	rayOnly = 0.0f;
 }
-
+*/
 void ParticleSystem::ok ()
 {
 	DEFAULT_OK_BLOCK
+	if (proc_ == nullptr)
+		_EXC_N (NULL_PROC_PTR, "Raytracer: Null Direct3DProcessor pointer")
 }
 
 ParticleSystem::ParticleSystem (Direct3DObject* drawing,
 								Direct3DProcessor* proc,
-								Ray* ray,
 								float xMin, float xMax,
 								float yMin, float yMax,
 								float zMin, float zMax,
-								UINT quantity,
-								float r, float g, float b, float a,
-								float colorScatter)
+								UINT quantity)
 try :
 	particles_ (),
 	object_    (drawing),
 	proc_      (proc),
-	ray_       (ray),
 	samplerN_  (),
 	textureN_  ()
 {
@@ -70,54 +68,37 @@ try :
 		_EXC_N (NULL_OBJECT, "ParticleSystem: Got null Direct3DObject pointer")
 	if (proc_ == nullptr)
 		_EXC_N (NULL_OBJECT, "ParticleSystem: Got null Direct3DProcessor pointer")
-	if (ray_ == nullptr)
-		_EXC_N (NULL_OBJECT, "ParticleSystem: Got null Ray pointer")
 
 
 	Vertex_t vertex = {};
-	XMFLOAT3 color = {};
 	particles_.reserve (quantity + 1);
 	for (UINT i = 0; i < quantity; i++)
 	{
-		vertex.x = (rand () * 1.0f / RAND_MAX) * (xMax - xMin) + xMin;
-		vertex.y = (rand () * 1.0f / RAND_MAX) * (yMax - yMin) + yMin;
-		vertex.z = (rand () * 1.0f / RAND_MAX) * (zMax - zMin) + zMin;
-
-#define RAND_COLOR(a_, b_) \
-		color.a_ = b_ + 2 * colorScatter * (rand () * 1.0f / RAND_MAX - 0.5f); \
-		if (color.a_ > 1.0f) color.a_ = 1.0f; \
-		if (color.a_ < 0.0f) color.a_ = 0.0f
-
-		RAND_COLOR (x, r);
-		RAND_COLOR (y, g);
-		RAND_COLOR (z, b);
-#undef RAND_COLOR
-
-		vertex.SetColor (color.x, color.y, color.z, a);
+		vertex.r = (rand () * 1.0f / RAND_MAX) * (xMax - xMin) + xMin;
+		vertex.g = (rand () * 1.0f / RAND_MAX) * (yMax - yMin) + yMin;
+		vertex.b = (rand () * 1.0f / RAND_MAX) * (zMax - zMin) + zMin;
 		particles_.push_back (vertex);
 	}
 
 	textureN_ = proc_->LoadTexture ("ParticleTexture.png");
-	object_->AddVertexArray (particles_.data (),
-							 particles_.size ());
 	ShaderIndex_t vertS = proc_->LoadShader ("shaders.fx",
-											"VShader",
+											"ParticleSystemVShader",
 											SHADER_VERTEX);
 
 	ShaderIndex_t pixS = proc_->LoadShader ("shaders.fx",
-										   "PShader",
+										   "ParticleSystemPShader",
 										   SHADER_PIXEL);
 
 	ShaderIndex_t geoS = proc_->LoadShader ("shaders.fx",
-											"GShader",
+											"ParticleSystemGShader",
 											SHADER_GEOMETRY);
 	proc_->RegisterObject (object_);
 
 	UINT layoutN = proc_->AddLayout (vertS,
-									true,
-									false,
-									false,
-									true);
+									 false, 
+									 false, 
+									 false, 
+									 true);
 
 	proc_->SetLayout (object_, layoutN);
 
@@ -135,27 +116,22 @@ ParticleSystem::~ParticleSystem ()
 	object_ = nullptr;
 }
 
-void ParticleSystem::PrepareToDraw0 ()
+void ParticleSystem::PrepareToDraw ()
 {
 	BEGIN_EXCEPTION_HANDLING 
-	ray_->SetRayOnly ();
-	ray_->Update ();
-	ray_->SendToGS ();
 	proc_->SendTextureToPS (textureN_, 7);
 	proc_->SendSamplerStateToPS (samplerN_, 7);
-	END_EXCEPTION_HANDLING (PREPARE_TO_DRAW0)
+	END_EXCEPTION_HANDLING (PREPARE_TO_DRAW)
 }
 
-void ParticleSystem::PrepareToDraw1 ()
+void ParticleSystem::DumpVerticesToObject ()
 {
 	BEGIN_EXCEPTION_HANDLING
-	ray_->SetAll ();
-	ray_->Update ();
-	ray_->SendToGS ();
-	proc_->SendTextureToPS (textureN_, 7);
-	proc_->SendSamplerStateToPS (samplerN_, 7);
-	END_EXCEPTION_HANDLING (PREPARE_TO_DRAW1)
+	object_->AddVertexArray (particles_.data (),
+							 particles_.size ());
+	END_EXCEPTION_HANDLING (DUMP_VERTICES_TO_OBJECT)
 }
+
 
 /*
 void ParticleSystem::ApplyRay (float r, float g, float b,

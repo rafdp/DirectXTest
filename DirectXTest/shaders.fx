@@ -12,13 +12,12 @@ cbuffer Cam : register(b1)
 
 cbuffer Ray : register(b2)
 {
-	float4 Color;
-	float4 Position;
-	float4 Direction;
-	float  Range;
-	float  Pow;
+	float4 PointColor;
+	float4 RayColor;
+	float  CosPow;
 	float  Scale;
-	float RayOnly;
+	float  RayOnly;
+	float  RayRange;
 }
 
 struct VS_OUTPUT
@@ -28,19 +27,11 @@ struct VS_OUTPUT
 	float4 color : COLOR;
 };
 
-struct PS_INPUT
-{
-	float4 position : SV_POSITION;
-	float4 texCoord : TEXCOORD;
-	float4 color : COLOR;
-};
-
-
 Texture2D ObjTexture : register (t7);
 SamplerState ObjSamplerState : register (s7);
 
-
-[maxvertexcount (4)]
+/*
+[maxvertexcount (12)]
 void GShader (point VS_OUTPUT input[1],
 			  inout TriangleStream<PS_INPUT> OutputStream)
 {
@@ -122,7 +113,7 @@ void GShader (point VS_OUTPUT input[1],
 		OutputStream.RestartStrip ();
 	}
 }
-
+*/
 float4 main () : SV_TARGET
 {
 	return float4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -144,7 +135,7 @@ output.position = mul (inPos, WVP);
 //output.color = inColor;
 
 return output;*/
-
+/*
 VS_OUTPUT VShader (float4 inPos : POSITION, float4 inColor : COLOR)
 {
 	VS_OUTPUT output;
@@ -163,7 +154,7 @@ float4 PShader (PS_INPUT input) : SV_TARGET
 
 	float3 finalColor = diffuse.xyz * input.color.xyz;
 	return float4 (finalColor, input.color.a * diffuse.a);
-}
+}*/
 
 VS_OUTPUT VShaderCube (float4 inPos : POSITION, float4 inColor : COLOR)
 {
@@ -178,4 +169,120 @@ VS_OUTPUT VShaderCube (float4 inPos : POSITION, float4 inColor : COLOR)
 float4 PShaderCube (VS_OUTPUT input) : SV_TARGET
 {
 	return input.color;
+}
+
+
+struct GSInput
+{
+	float4 worldPos : POSITION;
+	float4 color : COLOR;
+};
+
+struct PSInput
+{
+	float4 position : SV_POSITION; 
+	float4 texCoord : TEXCOORD;
+	float4 color : COLOR;
+};
+
+GSInput ParticleSystemVShader (float4 inColor : COLOR)
+{
+	GSInput ret;
+	ret.worldPos = mul (float4(inColor.xyz, 1.0f), World);
+	ret.worldPos.w = Scale;
+	if (RayOnly > 0.5f && inColor.a < 0.1f)
+	{
+		ret.color.a = 0.0f;
+		return ret;
+	}
+	if (RayOnly > 0.5f && inColor.a > 0.1f)
+	{
+		float tempCos = cos ((inColor.a - 0.2f) / RayRange);
+		tempCos = pow (tempCos, CosPow);
+		if (tempCos < 0.5f)
+			ret.color.a = 0.0f;
+		else
+		{
+			ret.worldPos.w *= -1.0f;
+			ret.color = RayColor * tempCos + PointColor * (1 - tempCos);
+		}
+		return ret;
+	}
+	if (RayOnly < 0.5f)
+	{
+		if (inColor.a < 0.1f)
+			ret.color = PointColor;
+		else 
+			ret.color.a = 0.0f;
+		return ret;
+	}
+	return ret;
+}
+
+[maxvertexcount (12)]
+void ParticleSystemGShader (point GSInput input[1],
+							inout TriangleStream<PSInput> OutputStream)
+{
+	if (input[0].color.a < 0.01f) return;
+
+	float3 normal = normalize (CamPos.xyz - input[0].worldPos.xyz);
+	float zPerpendicular = -normal.y / normal.z;
+	float3 upAxis = normalize (float3 (0.0f, 1.0f, zPerpendicular));
+	float3 rightAxis = normalize (cross (normal, upAxis));
+	float scale = abs (input[0].worldPos.a);
+	if (input[0].worldPos.a < 0.0f) scale *= 1.5;
+	scale /= 100.0f;
+
+	PSInput outputVert[4];
+
+
+	for (uint i1 = 0; i1 < 4; i1++)
+	{
+		outputVert[i1].position = mul (float4(input[0].worldPos.xyz -
+											  ((i1 < 2 ? (+1) : (-1)) * upAxis +
+											  ((i1 == 1 || i1 == 3) ? (+1) : (-1)) * rightAxis) * scale, 1.0f),
+									   VP);
+		outputVert[i1].texCoord = float4 ((i1 == 1 || i1 == 3) ? 0.0f : 1.0f,
+										  (i1 < 2) ? 0.0f : 1.0f,
+										  0.0f,
+										  0.0f);
+		outputVert[i1].color = input[0].color;
+		OutputStream.Append (outputVert[i1]);
+	}
+	if (input[0].worldPos.a > 0.0f) return;
+	OutputStream.RestartStrip ();
+
+
+	float3 shift = float3 (scale*2.0f*(sin (1024.0f * input[0].worldPos.x) / 2.0f + 0.5f),
+						   scale*2.0f*(cos (1124.0f * input[0].worldPos.y) / 2.0f + 0.5f),
+						   scale*2.0f*(sin (1224.0f * input[0].worldPos.z) / 2.0f + 0.5f));
+	for (uint i2 = 0; i2 < 4; i2++)
+	{
+		outputVert[i2].position = mul (float4(input[0].worldPos.xyz + shift -
+											  ((i2 < 2 ? (+1) : (-1)) * upAxis +
+											  ((i2 == 0 || i2 == 3) ? (+1) : (-1)) * rightAxis) * scale, 
+											  1.0f),
+									   VP);
+		OutputStream.Append (outputVert[i2]);
+	}
+	OutputStream.RestartStrip ();
+
+	for (uint i3 = 0; i3 < 4; i3++)
+	{
+		outputVert[i3].position = mul (float4(input[0].worldPos.xyz - shift -
+											  ((i3 < 2 ? (+1) : (-1)) * upAxis +
+											  ((i3 == 0 || i3 == 3) ? (+1) : (-1)) * rightAxis) * scale, 
+											  1.0f),
+									   VP);
+		OutputStream.Append (outputVert[i3]);
+	}
+}
+
+float4 ParticleSystemPShader (PSInput input) : SV_TARGET
+{
+	float4 diffuse = ObjTexture.Sample (ObjSamplerState, input.texCoord.xy);
+	clip (diffuse.a - .2);
+
+	float3 finalColor = diffuse.xyz * input.color.xyz;
+	return float4 (finalColor, input.color.a * diffuse.a);
 }
