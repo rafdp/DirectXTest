@@ -47,12 +47,13 @@ public:
 			   float cosPow,
 			   float pointsScale,
 			   float range,
+			   float cosClipping,
 			   XMFLOAT3 rayStartPos,
 			   XMFLOAT3 rayStartDir);
 
 	~Raytracer ();
 
-	void TraceRay (float step = 0.01f);
+	void TraceRay ();
 
 	void SetDrawRayOnly ();
 	void SetDrawAll ();

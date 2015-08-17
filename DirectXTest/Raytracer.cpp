@@ -14,11 +14,15 @@ Raytracer::Raytracer (ParticleSystem* ps,
 					  float cosPow,
 					  float pointsScale,
 					  float range,
+					  float cosClipping,
 					  XMFLOAT3 rayStartPos,
 					  XMFLOAT3 rayStartDir)
 try :
 	ps_              (ps),
-	rayData_         ({pointColor, rayColor, {cosPow, pointsScale, 0.0f, range}}),
+	rayData_         ({pointColor, rayColor, {cosPow, 
+											  pointsScale, 
+											  cosClipping,
+											  range}}),
 	rayStartPos_     (rayStartPos),
 	rayStartDir_     (rayStartDir),
 	nConstantBuffer_ ()
@@ -54,19 +58,19 @@ DWORD WINAPI ThreadedRaytracing (void* ptr)
 		XMStoreFloat (&distance, d);
 		if (distance < copy.range &&
 			(distance < copy.data[i].a ||
-			 copy.data[i].a < 0.1f))
-			 copy.data[i].a = distance + 0.2f;
+			 copy.data[i].a < -0.5f))
+			 copy.data[i].a = distance;
 	}
 	data.done++;
 	return 0;
 }
 
-void Raytracer::TraceRay (float step)
+void Raytracer::TraceRay ()
 {
 	BEGIN_EXCEPTION_HANDLING 
 	UINT iterations = 0;
 	XMVECTOR currentPos = XMLoadFloat3 (&rayStartPos_);
-	XMVECTOR currentDir = XMLoadFloat3 (&rayStartDir_);
+	XMVECTOR currentDir = XMVector3Normalize (XMLoadFloat3 (&rayStartDir_));
 	float distance = 0.0f;
 	std::vector<Vertex_t>& particles = ps_->particles_;
 	XMVECTOR d = XMVectorSet (0.0f, 0.0f, 0.0f, 0.0f);
@@ -75,6 +79,10 @@ void Raytracer::TraceRay (float step)
 			  i < particles.end ();
 			  i++)
 		i->a = -1.0f;
+
+	float step = rayData_.range / 3.0;
+
+	//float realRange = rayData_.range * acos (pow (fabs (rayData_.rayOnly), 1/rayData_.cosPow));
 
 	while (true)
 	{
@@ -165,11 +173,11 @@ void Raytracer::TraceRay (float step)
 
 void Raytracer::SetDrawRayOnly ()
 {
-	rayData_.rayOnly = 1.0f;
+	rayData_.rayOnly = fabs (rayData_.rayOnly);
 }
 void Raytracer::SetDrawAll ()
 {
-	rayData_.rayOnly = 0.0f;
+	rayData_.rayOnly = -fabs (rayData_.rayOnly);
 }
 void Raytracer::Update ()
 {
