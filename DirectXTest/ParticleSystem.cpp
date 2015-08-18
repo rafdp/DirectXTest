@@ -60,9 +60,12 @@ ParticleSystem::ParticleSystem (Direct3DObject* drawing,
 try :
 	particles_ (),
 	object_    (drawing),
-	proc_      (proc),
+	proc_      (proc)
+#ifndef ENHANCE_PERFORMANCE
+	,
 	samplerN_  (),
 	textureN_  ()
+#endif
 {
 	if (object_ == nullptr)
 		_EXC_N (NULL_OBJECT, "ParticleSystem: Got null Direct3DObject pointer")
@@ -79,8 +82,10 @@ try :
 		vertex.b = (rand () * 1.0f / RAND_MAX) * (zMax - zMin) + zMin;
 		particles_.push_back (vertex);
 	}
-
+#ifndef ENHANCE_PERFORMANCE
 	textureN_ = proc_->LoadTexture ("ParticleTexture.png");
+	samplerN_ = proc->AddSamplerState ();
+#endif
 	ShaderIndex_t vertS = proc_->LoadShader ("shaders.fx",
 											"ParticleSystemVShader",
 											SHADER_VERTEX);
@@ -105,8 +110,6 @@ try :
 	proc_->AttachShaderToObject (object_, vertS);
 	proc_->AttachShaderToObject (object_, pixS);
 	proc_->AttachShaderToObject (object_, geoS);
-
-	samplerN_ = proc->AddSamplerState ();
 }
 _END_EXCEPTION_HANDLING (CTOR)
 
@@ -119,8 +122,10 @@ ParticleSystem::~ParticleSystem ()
 void ParticleSystem::PrepareToDraw ()
 {
 	BEGIN_EXCEPTION_HANDLING 
+#ifndef ENHANCE_PERFORMANCE
 	proc_->SendTextureToPS (textureN_, 7);
 	proc_->SendSamplerStateToPS (samplerN_, 7);
+#endif
 	END_EXCEPTION_HANDLING (PREPARE_TO_DRAW)
 }
 

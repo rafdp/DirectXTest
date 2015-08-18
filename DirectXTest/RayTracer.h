@@ -35,6 +35,7 @@ class Raytracer : NZA_t
 	XMFLOAT3 rayStartPos_;
 	XMFLOAT3 rayStartDir_;
 	UINT nConstantBuffer_;
+	Rayrefractor refract_;
 
 public:
 

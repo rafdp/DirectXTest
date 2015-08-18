@@ -25,7 +25,8 @@ try :
 											  range}}),
 	rayStartPos_     (rayStartPos),
 	rayStartDir_     (rayStartDir),
-	nConstantBuffer_ ()
+	nConstantBuffer_ (),
+	refract_         (90.0f, 0.0f, 0.0f)
 {
 	ok ();
 	nConstantBuffer_ = ps_->proc_->RegisterConstantBuffer (&rayData_, 
@@ -71,6 +72,7 @@ void Raytracer::TraceRay ()
 	UINT iterations = 0;
 	XMVECTOR currentPos = XMLoadFloat3 (&rayStartPos_);
 	XMVECTOR currentDir = XMVector3Normalize (XMLoadFloat3 (&rayStartDir_));
+	float currentN = 1.0f;
 	float distance = 0.0f;
 	std::vector<Vertex_t>& particles = ps_->particles_;
 	XMVECTOR d = XMVectorSet (0.0f, 0.0f, 0.0f, 0.0f);
@@ -80,7 +82,7 @@ void Raytracer::TraceRay ()
 			  i++)
 		i->a = -1.0f;
 
-	float step = rayData_.range / 3.0;
+	float step = rayData_.range / 3.0 * fabs (rayData_.rayOnly);
 
 	//float realRange = rayData_.range * acos (pow (fabs (rayData_.rayOnly), 1/rayData_.cosPow));
 
@@ -105,12 +107,15 @@ void Raytracer::TraceRay ()
 
 	XMVECTOR currentPosBak = currentPos;
 	XMVECTOR currentDirBak = currentDir;
+	float currentNbak = currentN;
 	while (true)
 	{
 		d = XMVector3Length (currentPosBak);
 		XMStoreFloat (&distance, d);
 		if (distance > sqrt (3.0f)) break;
 		iterations++;
+		refract_.Process (currentPosBak, currentDirBak, currentNbak);
+
 		currentPosBak += currentDirBak * step;
 		if (iterations > 1000)
 			break;
@@ -160,6 +165,8 @@ void Raytracer::TraceRay ()
 
 		while (data.done != 4);
 
+		refract_.Process (currentPos, currentDir, currentN);
+
 		currentPos += currentDir * step;
 		iterations++;
 
@@ -197,7 +204,9 @@ void Raytracer::PrepareToDraw0 ()
 	SetDrawRayOnly ();
 	Update ();
 	SendToVS ();
+#ifndef ENHANCE_PERFORMANCE
 	ps_->PrepareToDraw ();
+#endif
 	END_EXCEPTION_HANDLING (PREPARE_TO_DRAW0)
 }
 void Raytracer::PrepareToDraw1 ()
@@ -206,7 +215,9 @@ void Raytracer::PrepareToDraw1 ()
 	SetDrawAll ();
 	Update ();
 	SendToVS ();
+#ifndef ENHANCE_PERFORMANCE
 	ps_->PrepareToDraw ();
+#endif
 	END_EXCEPTION_HANDLING (PREPARE_TO_DRAW1)
 }
 

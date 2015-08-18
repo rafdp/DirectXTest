@@ -11,4 +11,5 @@
 #include "Object.h"
 #include "Direct3DProcessor.h"
 #include "ParticleSystem.h"
+#include "RayRefractor.h"
 #include "Raytracer.h"

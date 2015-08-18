@@ -1,3 +1,4 @@
+
 #include "Builder.h"
 
 ExceptionData_t* __EXPN__ = nullptr;
@@ -15,19 +16,18 @@ int WINAPI WinMain (HINSTANCE hInstance,
 {
 	__EXPN__ = new ExceptionData_t (20, "ExceptionErrors.txt");
 	srand (static_cast<UINT>(time (NULL)));
-	AllocConsole ();
-	FILE* file = nullptr;
-	freopen_s (&file, "CONOUT$", "w", stdout);
-	//printf ("Hello world");
 	double time = 0.0;
 	int frames = 0;
 	Timer t;
 
 	try
 	{
-		printf ("Loading particles...\n");
+		WindowClass window (int (SCREEN_WIDTH * 0.75f), int (SCREEN_HEIGHT * 0.75f));
+		AllocConsole ();
+		FILE* file = nullptr;
+		freopen_s (&file, "CONOUT$", "w", stdout);
 
-		WindowClass window (int(SCREEN_WIDTH * 0.5f), int(SCREEN_HEIGHT * 0.5f));
+		printf ("Loading particles...\n");
 		Direct3DProcessor d3dProc (&window);
 		d3dProc.ApplyBlendState (d3dProc.AddBlendState (true));
 
@@ -36,25 +36,40 @@ int WINAPI WinMain (HINSTANCE hInstance,
 
 		Direct3DObject* particles = new (GetValidObjectPtr ())
 			Direct3DObject (world, false, false, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-
+		float x_ = 0.7f;
+		float y_ = 1.5f;
+		float z_ = 0.8f;
+#ifndef ENHANCE_PERFORMANCE
 		ParticleSystem ps (particles, &d3dProc,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
-						   500000);
-		float x_ = rand () * 1.0f / RAND_MAX;
-		float y_ = rand () * 1.0f / RAND_MAX;
-		float z_ = rand () * 1.0f / RAND_MAX;
-
+						   1000000);
 		Raytracer raytracer (&ps, 2,
-							 { 0.0f, 0.8f, 1.0f, 0.075f },
+							 { 0.0f, 0.8f, 1.0f, 0.08f },
 							 { 1.0f, 0.0f, 0.0f, 0.8f },
-							 4.0f, 0.6f, 0.07f, 0.5f, // cospow, scale, range, clip
+							 4.0f, 1.0f, 0.05f, 0.5f, // cospow, scale, range, clip
+							 { x_, y_, z_ },
+							 { -0.1f - x_, -0.3f - y_, -0.5f - z_ });
+#else
+		ParticleSystem ps (particles, &d3dProc,
+						   -1.0f, 1.0f,
+						   -1.0f, 1.0f,
+						   -1.0f, 1.0f,
+						   100000);
+		Raytracer raytracer (&ps, 2,
+							{ 0.0f, 0.8f, 1.0f, 0.075f },
+							{ 1.0f, 0.0f, 0.0f, 0.8f },
+							 4.0f, 1.0f, 0.05f, 0.5f, // cospow, scale, range, clip
 							 { x_, y_, z_ },
 							 { 0.1f - x_, -0.3f - y_, 0.5f - z_ });
+#endif
+		
+
+		
 
 		printf ("Particles loaded\n");
-		XMFLOAT4 camPos = { 0.0f, 3.0f, 8.0f, 1.0f };
+		XMFLOAT4 camPos = { 0.0f, 0.0f, 8.0f, 1.0f };
 		Direct3DCamera cam (&window,
 							camPos.x, camPos.y, camPos.z,
 							0.0f, 0.0f, 0.0f,
@@ -73,6 +88,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 		printf ("Tracing ray\n");
 		raytracer.TraceRay ();
 		printf ("Ray ready\n");
+		SetForegroundWindow (window.hwnd ());
 
 		ps.DumpVerticesToObject ();
 
@@ -101,7 +117,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 				printf ("Shaders reloaded\n");
 			}
 
-			obj->GetWorld () = particles->GetWorld () *= XMMatrixRotationX (0.005f) * XMMatrixRotationY (0.01f) * XMMatrixRotationZ (0.015f);
+			obj->GetWorld () = particles->GetWorld () *=  XMMatrixRotationY (0.01f);
 			d3dProc.SendCBToGS (camBuf);
 			raytracer.PrepareToDraw0 ();
 			d3dProc.ProcessDrawing (&cam);

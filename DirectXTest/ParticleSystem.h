@@ -35,8 +35,10 @@ class ParticleSystem : NZA_t
 	std::vector<Vertex_t> particles_;
 	Direct3DObject* object_;
 	Direct3DProcessor* proc_;
+#ifndef ENHANCE_PERFORMANCE
 	UINT samplerN_;
 	UINT textureN_;
+#endif
 
 	friend class Raytracer;
 
