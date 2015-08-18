@@ -62,7 +62,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 							{ 1.0f, 0.0f, 0.0f, 0.8f },
 							 4.0f, 1.0f, 0.05f, 0.5f, // cospow, scale, range, clip
 							 { x_, y_, z_ },
-							 { 0.1f - x_, -0.3f - y_, 0.5f - z_ });
+							 { -0.9f - x_, -0.3f - y_, -0.9f - z_ });
 #endif
 		
 
@@ -256,7 +256,7 @@ Direct3DObject* GetCube (Direct3DProcessor* proc)
 														"PShaderCube",
 														SHADER_PIXEL));
 
-	UINT n = proc->AddLayout (vertS, true, false, false, true);
+	LayoutIndex_t n = proc->AddLayout (vertS, true, false, false, true);
 
 	proc->EnableLayout (n);
 	proc->SetLayout (cube, n);

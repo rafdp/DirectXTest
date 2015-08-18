@@ -69,8 +69,11 @@ Direct3DObject::Direct3DObject (XMMATRIX& world,
 	vertexShader_    (-1),
 	pixelShader_     (-1),
 	geometryShader_  (-1),
-	layoutN_         (-1)
-{}
+	layoutN_         (-1),
+	draw_            ()
+{
+	InitializeCriticalSection (&draw_);
+}
 
 void Direct3DObject::SetCBManager (Direct3DConstantBufferManager* cbManager)
 {
@@ -92,9 +95,10 @@ Direct3DObject::~Direct3DObject ()
 			indexBuffer_ = nullptr;
 		}
 	}
+	DeleteCriticalSection (&draw_);
 }
 
-void Direct3DObject::SetID (UINT objectId)
+void Direct3DObject::SetID (uint64_t objectId)
 {
 	BEGIN_EXCEPTION_HANDLING
 	objectId_ = objectId;
@@ -107,6 +111,13 @@ void Direct3DObject::AddVertexArray (Vertex_t* vert, size_t n)
 	/*if (buffersSet_)
 		_EXC_N (BUFFERS_SET, "D3D: Cannot add vertices to buffered object")*/
 		vertices_.insert (vertices_.begin (), vert, vert + n);
+	END_EXCEPTION_HANDLING (ADD_VERTEX_ARRAY)
+}
+
+void Direct3DObject::ClearVertexArray ()
+{
+	BEGIN_EXCEPTION_HANDLING
+	vertices_.clear ();
 	END_EXCEPTION_HANDLING (ADD_VERTEX_ARRAY)
 }
 
@@ -154,6 +165,8 @@ void Direct3DObject::Draw (ID3D11DeviceContext* deviceContext,
 {
 	BEGIN_EXCEPTION_HANDLING
 
+	EnterCriticalSection ();
+
 	if (buffersSet_ == false)
 		_EXC_N (BUFFERS_NOT_SET, 
 				"D3D: Unable to draw with the buffers not set (obj %d)" _ 
@@ -180,6 +193,8 @@ void Direct3DObject::Draw (ID3D11DeviceContext* deviceContext,
 	currM_.objData_.WVP   = XMMatrixTranspose (tempWVP);
 	currM_.objData_.World = XMMatrixTranspose (currM_.world_);
 
+
+
 	cbManager_->Update (objectBufferN_, deviceContext);
 	cbManager_->SendVSBuffer (objectBufferN_, deviceContext);
 	cbManager_->SendGSBuffer (objectBufferN_, deviceContext);
@@ -187,15 +202,16 @@ void Direct3DObject::Draw (ID3D11DeviceContext* deviceContext,
 	deviceContext->IASetPrimitiveTopology (topology_);
 
 	if (drawIndexed_)
-		deviceContext->DrawIndexed (indices_.size (), 0, 0);
+		deviceContext->DrawIndexed (static_cast<UINT> (indices_.size ()), 0, 0);
 	else
-		deviceContext->Draw (vertices_.size (), 0);
+		deviceContext->Draw (static_cast<UINT> (vertices_.size ()), 0);
+	ExitCriticalSection ();
 
 	END_EXCEPTION_HANDLING (DRAW_OBJECT)
 
 }
 
-void Direct3DObject::SaveLayout (UINT n)
+void Direct3DObject::SaveLayout (LayoutIndex_t n)
 {
 	layoutN_ = n;
 }
@@ -205,16 +221,18 @@ void Direct3DObject::ClearBuffers ()
 {
 	BEGIN_EXCEPTION_HANDLING
 
-	if (!buffersSet_)
-		_EXC_N (BUFFERS_NOT_SET, "D3D: Unable to clear empty buffers (obj %d)" _
-				objectId_)
+	if (!buffersSet_) return;
+		//_EXC_N (BUFFERS_NOT_SET, "D3D: Unable to clear empty buffers (obj %d)" _
+		//		objectId_)
 
 	buffersSet_ = false;
 
-	vertexBuffer_->Release ();
+	if (vertexBuffer_)
+		vertexBuffer_->Release ();
 	vertexBuffer_ = nullptr;
 
-	indexBuffer_->Release ();
+	if (indexBuffer_)
+		indexBuffer_->Release ();
 	indexBuffer_ = nullptr;
 
 	END_EXCEPTION_HANDLING (CLEAR_BUFFERS)
@@ -237,7 +255,7 @@ void Direct3DObject::SetVertexBuffer (ID3D11Device* device)
 	D3D11_BUFFER_DESC bufferDesc = {};
 
 	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	bufferDesc.ByteWidth = sizeof (Vertex_t) * vertices_.size ();
+	bufferDesc.ByteWidth = static_cast<UINT> (sizeof (Vertex_t) * vertices_.size ());
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
@@ -269,7 +287,7 @@ void Direct3DObject::SetIndexBuffer (ID3D11Device* device)
 		HRESULT result = S_OK;
 
 		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		bufferDesc.ByteWidth = indices_.size () * sizeof (UINT);
+		bufferDesc.ByteWidth = static_cast<UINT> (indices_.size () * sizeof (UINT));
 		bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 		bufferDesc.CPUAccessFlags = 0;
 		bufferDesc.MiscFlags = 0;
@@ -304,6 +322,17 @@ void Direct3DObject::SetObjectBuffer (ID3D11Device* device)
 	objectBufferSet_ = true;
 
 	END_EXCEPTION_HANDLING (SET_OBJECT_BUFFER)
+}
+
+
+
+void Direct3DObject::EnterCriticalSection ()
+{
+	::EnterCriticalSection (&draw_);
+}
+void Direct3DObject::ExitCriticalSection ()
+{
+	::LeaveCriticalSection (&draw_);
 }
 
 

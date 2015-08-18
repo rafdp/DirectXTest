@@ -1,6 +1,6 @@
 #include "Builder.h"
 
-bool Direct3DShaderManager::CheckShaderType (UINT n)
+bool Direct3DShaderManager::CheckShaderType (ShaderIndex_t n)
 {
 	if (n >= shaders_.size ())
 		_EXC_N (OUT_OF_RANGE, "D3D: Out of range index (%d of %d)" _ n _ shaders_.size ())

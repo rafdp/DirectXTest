@@ -1,5 +1,5 @@
 
-//#define ENHANCE_PERFORMANCE
+#define ENHANCE_PERFORMANCE
 
 cbuffer cbPerObject : register(b0)
 {

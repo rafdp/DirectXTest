@@ -34,8 +34,10 @@ class Raytracer : NZA_t
 	RaytracerCBData_t rayData_;
 	XMFLOAT3 rayStartPos_;
 	XMFLOAT3 rayStartDir_;
-	UINT nConstantBuffer_;
+	ConstantBufferIndex_t nConstantBuffer_;
 	Rayrefractor refract_;
+	volatile bool stop_;
+	volatile bool ready_;
 
 public:
 
@@ -64,5 +66,20 @@ public:
 	void PrepareToDraw0 ();
 	void PrepareToDraw1 ();
 	float& GetCosPow ();
+
+	static DWORD WINAPI ParallelProcessing (void* ptr);
+
+	void SetCosPow     (float setting);
+	void SetRange      (float setting);
+	void SetScale      (float setting);
+	void SetCosClip    (float setting);
+	void SetRayColor   (XMFLOAT4 color);
+	void SetRayColorR  (float setting);
+	void SetRayColorG  (float setting);
+	void SetRayColorB  (float setting);
+	void SetRayColorA  (float setting);
+	void SetTopTemp    (float setting);
+	void SetBottomTemp (float setting);
+	void SetTransition (float setting);
 };
 

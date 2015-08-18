@@ -80,6 +80,7 @@ try :
 		vertex.r = (rand () * 1.0f / RAND_MAX) * (xMax - xMin) + xMin;
 		vertex.g = (rand () * 1.0f / RAND_MAX) * (yMax - yMin) + yMin;
 		vertex.b = (rand () * 1.0f / RAND_MAX) * (zMax - zMin) + zMin;
+		vertex.a = -1.0;
 		particles_.push_back (vertex);
 	}
 #ifndef ENHANCE_PERFORMANCE
@@ -99,11 +100,11 @@ try :
 											SHADER_GEOMETRY);
 	proc_->RegisterObject (object_);
 
-	UINT layoutN = proc_->AddLayout (vertS,
-									 false, 
-									 false, 
-									 false, 
-									 true);
+	LayoutIndex_t layoutN = proc_->AddLayout (vertS,
+											  false, 
+											  false, 
+											  false, 
+											  true);
 
 	proc_->SetLayout (object_, layoutN);
 

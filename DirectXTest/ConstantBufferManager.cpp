@@ -33,7 +33,7 @@ ConstantBufferIndex_t Direct3DConstantBufferManager::Bind (void* data,
 	HRESULT result = S_OK;
 
 	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.ByteWidth = size;
+	bufferDesc.ByteWidth = static_cast <UINT> (size);
 	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = 0;

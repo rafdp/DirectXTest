@@ -4,6 +4,7 @@
 
 class WindowClass;
 
+
 class Direct3DProcessor : NZA_t
 {
 	IDXGISwapChain*			  swapChain_;
@@ -48,21 +49,21 @@ public:
 	void ProcessDrawing (Direct3DCamera* cam, bool clean = true);
 	void Present ();
 
-	UINT AddDepthStencilState (bool enableDepth = true, 
+	DepthStencilIndex_t AddDepthStencilState (bool enableDepth = true,
 							   bool enableStencil = false);
-	void ApplyDepthStencilState (UINT n);
+	void ApplyDepthStencilState (DepthStencilIndex_t n);
 
-	UINT AddRasterizerState   (bool clockwise = true, 
+	RasterizerIndex_t AddRasterizerState   (bool clockwise = true,
 							   bool wireframe = false, 
 							   bool cullNone  = false);
-	void ApplyRasterizerState (UINT n);
+	void ApplyRasterizerState (RasterizerIndex_t n);
 
 
-	UINT AddBlendState (bool blend = false);
-	void ApplyBlendState (UINT n);
+	BlendIndex_t AddBlendState (bool blend = false);
+	void ApplyBlendState (BlendIndex_t n);
 
-	UINT AddSamplerState (D3D11_TEXTURE_ADDRESS_MODE mode = D3D11_TEXTURE_ADDRESS_WRAP);
-	void SendSamplerStateToPS (UINT n, UINT slot);
+	SamplerIndex_t AddSamplerState (D3D11_TEXTURE_ADDRESS_MODE mode = D3D11_TEXTURE_ADDRESS_WRAP);
+	void SendSamplerStateToPS (SamplerIndex_t n, UINT slot);
 
 	void RegisterObject (Direct3DObject* obj);
 	std::vector<Direct3DObject*>& GetObjectsVector ();
@@ -77,22 +78,22 @@ public:
 	ID3D11PixelShader*    GetPixelShader    (ShaderIndex_t desc);
 	ID3D11GeometryShader* GetGeometryShader (ShaderIndex_t desc);
 
-	UINT AddLayout (ShaderIndex_t desc,
+	LayoutIndex_t AddLayout (ShaderIndex_t desc,
 					bool position = false,
 					bool normal = false,
 					bool texture = false,
 					bool color = false);
 
-	void EnableLayout (UINT n);
-	void SetLayout (Direct3DObject* obj, UINT n);
+	void EnableLayout (LayoutIndex_t n);
+	void SetLayout (Direct3DObject* obj, LayoutIndex_t n);
 
-	UINT RegisterConstantBuffer (void* data,
+	ConstantBufferIndex_t RegisterConstantBuffer (void* data,
 							     size_t size,
 							     UINT slot);
-	void UpdateConstantBuffer (UINT n);
-	void SendCBToVS (UINT n);
-	void SendCBToPS (UINT n);
-	void SendCBToGS (UINT n);
+	void UpdateConstantBuffer (ConstantBufferIndex_t n);
+	void SendCBToVS (ConstantBufferIndex_t n);
+	void SendCBToPS (ConstantBufferIndex_t n);
+	void SendCBToGS (ConstantBufferIndex_t n);
 
 	void AttachShaderToObject (Direct3DObject* obj, ShaderIndex_t n);
 
@@ -100,4 +101,6 @@ public:
 	void SendTextureToPS (TextureIndex_t index, UINT slot);
 
 	void ReloadShaders ();
+
+	ID3D11Device* GetDevice ();
 };

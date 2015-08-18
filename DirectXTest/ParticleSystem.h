@@ -36,8 +36,8 @@ class ParticleSystem : NZA_t
 	Direct3DObject* object_;
 	Direct3DProcessor* proc_;
 #ifndef ENHANCE_PERFORMANCE
-	UINT samplerN_;
-	UINT textureN_;
+	SamplerIndex_t samplerN_;
+	TextureIndex_t textureN_;
 #endif
 
 	friend class Raytracer;

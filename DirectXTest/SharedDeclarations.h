@@ -104,6 +104,7 @@ enum ERRORS
 	E (109, PREPARE_TO_DRAW)
 	E (110, TRACE_RAY)
 	E (111, DUMP_VERTICES_TO_OBJECT)
+	E (112, PARALLEL_PROCESSING)
 };
 
 const wchar_t  APPLICATION_TITLE_W[] = L"DirectXTest";
@@ -123,5 +124,14 @@ class ExceptionData_t;
 extern ExceptionData_t* __EXPN__;
 
 const DXGI_SAMPLE_DESC SAMPLE_DESC = { 4, 0 };
+
+typedef uint64_t DepthStencilIndex_t;
+typedef uint64_t RasterizerIndex_t;
+typedef uint64_t BlendIndex_t;
+typedef uint64_t SamplerIndex_t;
+typedef uint64_t LayoutIndex_t;
+typedef uint64_t TextureIndex_t;
+typedef uint64_t ShaderIndex_t;
+typedef uint64_t ConstantBufferIndex_t;
 
 #undef E

@@ -9,7 +9,6 @@ struct BufferInfo_t
 	UINT slot;
 };
 
-typedef UINT ConstantBufferIndex_t;
 
 class Direct3DConstantBufferManager : NZA_t
 {

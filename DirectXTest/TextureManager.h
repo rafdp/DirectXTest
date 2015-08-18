@@ -2,7 +2,6 @@
 
 #include "includes.h"
 
-typedef UINT TextureIndex_t;
 
 class Direct3DTextureManager : NZA_t
 {

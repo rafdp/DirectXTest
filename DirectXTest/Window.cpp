@@ -128,9 +128,9 @@ LRESULT CALLBACK WindowCallback (HWND windowHandle,
 			case WM_CREATE:
 			{
 				WindowClass* windowPtr = reinterpret_cast<WindowClass*> (lparam + offsetof (CREATESTRUCT, lpCreateParams));
-				SetWindowLong (windowHandle,
-							   GWL_USERDATA,
-							   reinterpret_cast<LONG> (windowPtr));
+				SetWindowLongPtr (windowHandle,
+								  GWL_MY_USERDATA,
+							      reinterpret_cast<LONG_PTR> (windowPtr));
 				break;
 			}
 			case WM_DESTROY:
@@ -150,7 +150,7 @@ LRESULT CALLBACK WindowCallback (HWND windowHandle,
 
 			case WM_SIZE:
 			{
-				WindowClass* wc = reinterpret_cast <WindowClass*> (GetWindowLong (windowHandle, GWL_USERDATA));
+				WindowClass* wc = reinterpret_cast <WindowClass*> (GetWindowLongPtr (windowHandle, GWL_MY_USERDATA));
 							
 				if (wparam == SIZE_MINIMIZED) break;
 				RECT r = {};

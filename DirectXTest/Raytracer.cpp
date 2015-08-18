@@ -26,7 +26,9 @@ try :
 	rayStartPos_     (rayStartPos),
 	rayStartDir_     (rayStartDir),
 	nConstantBuffer_ (),
-	refract_         (0.0f, 90.0f, 1.0f)
+	refract_         (0.0f, 60.0f, 1.0f),
+	stop_            (false),
+	ready_           (true)
 {
 	ok ();
 	nConstantBuffer_ = ps_->proc_->RegisterConstantBuffer (&rayData_, 
@@ -68,113 +70,18 @@ DWORD WINAPI ThreadedRaytracing (void* ptr)
 
 void Raytracer::TraceRay ()
 {
-	BEGIN_EXCEPTION_HANDLING 
-	UINT iterations = 0;
-	XMVECTOR currentPos = XMLoadFloat3 (&rayStartPos_);
-	XMVECTOR currentDir = XMVector3Normalize (XMLoadFloat3 (&rayStartDir_));
-	float currentN = 1.0f;
-	float distance = 0.0f;
-	std::vector<Vertex_t>& particles = ps_->particles_;
-	XMVECTOR d = XMVectorSet (0.0f, 0.0f, 0.0f, 0.0f);
-	
-	for (auto i = particles.begin ();
-			  i < particles.end ();
-			  i++)
-		i->a = -1.0f;
+	BEGIN_EXCEPTION_HANDLING
+	if (!ready_) stop_ = true;
+	while (!ready_);
+	ready_ = false;
+	CreateThread (NULL,
+				  0,
+				  ParallelProcessing,
+				  this,
+				  0,
+			      NULL);
+	//while (!ready_);
 
-	float step = rayData_.range / 3.0 * fabs (rayData_.rayOnly);
-
-	//float realRange = rayData_.range * acos (pow (fabs (rayData_.rayOnly), 1/rayData_.cosPow));
-
-	while (true)
-	{
-		XMVECTOR d = XMVector3Length (currentPos);
-		XMStoreFloat (&distance, d);
-		if (distance <= sqrt (3.0f)) break;
-
-		currentPos += currentDir * step;
-		iterations++;
-
-		if (iterations > 1000)
-		{
-			_MessageBox ("Raytracer: The ray didn't intersect the object");
-			return;
-		}
-	}
-
-	printf ("Ray in cube\n");
-	iterations = 0;
-
-	XMVECTOR currentPosBak = currentPos;
-	XMVECTOR currentDirBak = currentDir;
-	float currentNbak = currentN;
-	while (true)
-	{
-		d = XMVector3Length (currentPosBak);
-		XMStoreFloat (&distance, d);
-		if (distance > sqrt (3.0f)) break;
-		iterations++;
-		refract_.Process (currentPosBak, currentDirBak, currentNbak);
-
-		currentPosBak += currentDirBak * step;
-		if (iterations > 1000)
-			break;
-	}
-
-	UINT Niterations = iterations;
-	iterations = 0;
-
-	size_t size = particles.size ();
-	UINT threadsN = std::thread::hardware_concurrency ();
-	uint64_t sizeSingle = size / threadsN;
-	uint64_t shift = 0;
-	
-	ThreadData_t data = { &currentPos, rayData_.range };
-	
-	while (true)
-	{
-		PrintfProgressBar (iterations, Niterations);
-		d = XMVector3Length (currentPos);
-		XMStoreFloat (&distance, d);
-		if (distance >= sqrt (3.0f)) break;
-		data.done = 0;
-		for (uint8_t i = 0; i < threadsN - 1; i++)
-		{
-			data.data = particles.data () + shift;
-			data.size = sizeSingle;
-			data.read = false;
-
-			CreateThread (NULL, 
-						  0, 
-						  ThreadedRaytracing, 
-						  &data,
-						  0, 
-						  NULL);
-
-			while (!data.read);
-			shift += sizeSingle;
-		}
-		data.data = particles.data () + shift;
-		data.size = size - shift;
-		CreateThread (NULL,
-					  0,
-					  ThreadedRaytracing,
-					  &data,
-					  0,
-					  NULL);
-
-		while (data.done != 4);
-
-		refract_.Process (currentPos, currentDir, currentN);
-
-		currentPos += currentDir * step;
-		iterations++;
-
-		shift = 0;
-		if (iterations > 1000)
-			break;
-	}
-	_putch ('\n');
 	END_EXCEPTION_HANDLING (TRACE_RAY)
 }
 
@@ -224,4 +131,216 @@ void Raytracer::PrepareToDraw1 ()
 float& Raytracer::GetCosPow ()
 {
 	return rayData_.cosPow;
+}
+
+DWORD WINAPI Raytracer::ParallelProcessing (void* ptr)
+{
+	Raytracer& _this = *reinterpret_cast<Raytracer*> (ptr);
+	try
+	{
+		_this.ok ();
+		UINT iterations = 0;
+		XMVECTOR currentPos = XMLoadFloat3 (&_this.rayStartPos_);
+		XMVECTOR currentDir = XMVector3Normalize (XMLoadFloat3 (&_this.rayStartDir_));
+		float currentN = 1.0f;
+		float distance = 0.0f;
+		std::vector<Vertex_t>& particles = _this.ps_->particles_;
+		XMVECTOR d = XMVectorSet (0.0f, 0.0f, 0.0f, 0.0f);
+		
+		for (auto i = particles.begin ();
+		i < particles.end ();
+			i++)
+			i->a = -1.0f;
+
+		float step = float (_this.rayData_.range / 3.0 * fabs (_this.rayData_.rayOnly));
+
+		while (true)
+		{
+			XMVECTOR d = XMVector3Length (currentPos);
+			XMStoreFloat (&distance, d);
+			if (distance <= sqrt (3.0f)) break;
+
+			currentPos += currentDir * step;
+			iterations++;
+
+			if (iterations > 1000)
+			{
+				_MessageBox ("Raytracer: The ray didn't intersect the object");
+				return 0;
+			}
+		}
+		if (_this.stop_) { _this.stop_ = false; return 0; }
+		iterations = 0;
+
+		XMVECTOR currentPosBak = currentPos;
+		XMVECTOR currentDirBak = currentDir;
+		float currentNbak = currentN;
+		while (true)
+		{
+			d = XMVector3Length (currentPosBak);
+			XMStoreFloat (&distance, d);
+			if (distance > sqrt (3.0f)) break;
+			iterations++;
+			_this.refract_.Process (currentPosBak, currentDirBak, currentNbak);
+
+			currentPosBak += currentDirBak * step;
+			if (iterations > 1000)
+				break;
+		}
+		if (_this.stop_) { _this.stop_ = false; return 0; }
+
+		UINT Niterations = iterations;
+		iterations = 0;
+
+		size_t size = particles.size ();
+		UINT threadsN = std::thread::hardware_concurrency ();
+		uint64_t sizeSingle = size / threadsN;
+		uint64_t shift = 0;
+
+		ThreadData_t data = { &currentPos, _this.rayData_.range };
+
+		while (true)
+		{
+			if (_this.stop_) { _this.stop_ = false; return 0; }
+			PrintfProgressBar (iterations, Niterations);
+			d = XMVector3Length (currentPos);
+			XMStoreFloat (&distance, d);
+			if (distance >= sqrt (3.0f)) break;
+			data.done = 0;
+			//thread stuff
+			{
+				for (uint8_t i = 0; i < threadsN - 1; i++)
+				{
+					data.data = particles.data () + shift;
+					data.size = sizeSingle;
+					data.read = false;
+
+					CreateThread (NULL,
+								  0,
+								  ThreadedRaytracing,
+								  &data,
+								  0,
+								  NULL);
+
+					while (!data.read);
+					shift += sizeSingle;
+				}
+				data.data = particles.data () + shift;
+				data.size = size - shift;
+				CreateThread (NULL,
+							  0,
+							  ThreadedRaytracing,
+							  &data,
+							  0,
+							  NULL);
+			}
+
+			while (data.done != 4);
+
+			_this.refract_.Process (currentPos, currentDir, currentN);
+
+			currentPos += currentDir * step;
+			iterations++;
+
+			shift = 0;
+			if (iterations > 1000)
+				break;
+		}
+
+		_this.ready_ = true;
+		_putch ('\n');
+		_this.ps_->object_->EnterCriticalSection ();
+		_this.ps_->object_->ClearVertexArray ();
+		_this.ps_->object_->AddVertexArray (_this.ps_->particles_.data (),
+											_this.ps_->particles_.size ());
+		_this.ps_->object_->SetVertexBuffer (_this.ps_->proc_->GetDevice ());
+		_this.ps_->object_->ExitCriticalSection ();
+		_this.ok ();
+	}
+	catch (ExceptionHandler_t& ex)
+	{
+		_MessageBox ("Exception occurred (WINDOW_CALLBACK)\nCheck \"ExceptionErrors.txt\"");
+		ex.WriteLog (__EXPN__);
+		system ("start ExceptionErrors.txt");
+	}
+	catch (std::exception err)
+	{
+		_MessageBox ("Exception occurred: %s\n", err.what ());
+	}
+	catch (...)
+	{
+		_MessageBox ("Exception occurred\n");
+	}
+	return 0;
+}
+
+
+void Raytracer::SetCosPow (float setting)
+{
+	if (setting > -1.0f && setting < 20.0f)
+		rayData_.cosPow = setting;
+}
+void Raytracer::SetRange (float setting)
+{
+	if (setting > 0.0f && setting < 1.0f)
+		rayData_.range = setting;
+}
+void Raytracer::SetScale (float setting)
+{
+	if (setting > 0.0f && setting < 10.0f)
+		rayData_.pointsScale = setting;
+}
+void Raytracer::SetCosClip (float setting)
+{
+	if (setting > 0.0f && setting < 1.0f)
+		rayData_.rayOnly *= setting / fabs (rayData_.rayOnly);
+}
+void Raytracer::SetRayColor (XMFLOAT4 color)
+{
+	XMStoreFloat4 (&rayData_.rayColor,
+				   XMVectorSaturate (XMLoadFloat4 (&color)));
+}
+void Raytracer::SetRayColorR (float setting)
+{
+	if (setting > 1.0f) rayData_.rayColor.x = 1.0f;
+	else
+	if (setting < 0.0f) rayData_.rayColor.x = 0.0f;
+	else
+		rayData_.rayColor.x = setting;
+}
+void Raytracer::SetRayColorG (float setting)
+{
+	if (setting > 1.0f) rayData_.rayColor.y = 1.0f;
+	else
+	if (setting < 0.0f) rayData_.rayColor.y = 0.0f;
+	else
+		rayData_.rayColor.y = setting;
+}
+void Raytracer::SetRayColorB (float setting)
+{
+	if (setting > 1.0f) rayData_.rayColor.z = 1.0f;
+	else
+	if (setting < 0.0f) rayData_.rayColor.z = 0.0f;
+	else
+		rayData_.rayColor.z = setting;
+}
+void Raytracer::SetRayColorA (float setting)
+{
+	if (setting > 1.0f) rayData_.rayColor.w = 1.0f;
+	else
+	if (setting < 0.0f) rayData_.rayColor.w = 0.0f;
+	else
+		rayData_.rayColor.w = setting;
+}
+void Raytracer::SetTopTemp (float setting)
+{
+	refract_.SetTopTemperature (setting);
+}
+void Raytracer::SetBottomTemp (float setting)
+{
+	refract_.SetBottomTemperature (setting);
+}
+void Raytracer::SetTransition (float setting)
+{
+	refract_.SetTransitionLength (setting);
 }

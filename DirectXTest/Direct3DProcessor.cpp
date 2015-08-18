@@ -155,7 +155,7 @@ void Direct3DProcessor::Present ()
 	END_EXCEPTION_HANDLING (PRESENT)
 }
 
-UINT Direct3DProcessor::AddDepthStencilState (bool enableDepth, 
+DepthStencilIndex_t Direct3DProcessor::AddDepthStencilState (bool enableDepth,
 											  bool enableStencil)
 {
 	BEGIN_EXCEPTION_HANDLING
@@ -195,7 +195,7 @@ UINT Direct3DProcessor::AddDepthStencilState (bool enableDepth,
 	END_EXCEPTION_HANDLING (ADD_DEPTH_STENCIL_STATE)
 }
 
-void Direct3DProcessor::ApplyDepthStencilState (UINT n)
+void Direct3DProcessor::ApplyDepthStencilState (DepthStencilIndex_t n)
 {
 	BEGIN_EXCEPTION_HANDLING
 	if (n >= depthStencilStates_.size ())
@@ -333,7 +333,7 @@ void Direct3DProcessor::InitDepthStencilView ()
 	END_EXCEPTION_HANDLING (INIT_DEPTH_STENCIL_VIEW)
 }
 
-UINT Direct3DProcessor::AddRasterizerState (bool clockwise, bool wireframe, bool cullNone)
+RasterizerIndex_t Direct3DProcessor::AddRasterizerState (bool clockwise, bool wireframe, bool cullNone)
 {
 	BEGIN_EXCEPTION_HANDLING
 	
@@ -369,7 +369,7 @@ UINT Direct3DProcessor::AddRasterizerState (bool clockwise, bool wireframe, bool
 	END_EXCEPTION_HANDLING (ADD_RASTERIZER_STATE)
 }
 
-void Direct3DProcessor::ApplyRasterizerState (UINT n)
+void Direct3DProcessor::ApplyRasterizerState (RasterizerIndex_t n)
 {
 	BEGIN_EXCEPTION_HANDLING
 	if (n >= rasterizerStates_.size ())
@@ -380,7 +380,7 @@ void Direct3DProcessor::ApplyRasterizerState (UINT n)
 	END_EXCEPTION_HANDLING (APPLY_RASTERIZER_STATE)
 }
 
-UINT Direct3DProcessor::AddBlendState (bool blend)
+BlendIndex_t Direct3DProcessor::AddBlendState (bool blend)
 {
 	BEGIN_EXCEPTION_HANDLING
 
@@ -417,7 +417,7 @@ UINT Direct3DProcessor::AddBlendState (bool blend)
 	END_EXCEPTION_HANDLING (ADD_BLEND_STATE)
 }
 
-void Direct3DProcessor::ApplyBlendState (UINT n)
+void Direct3DProcessor::ApplyBlendState (BlendIndex_t n)
 {
 	BEGIN_EXCEPTION_HANDLING
 	if (n >= blendStates_.size ())
@@ -429,7 +429,7 @@ void Direct3DProcessor::ApplyBlendState (UINT n)
 	END_EXCEPTION_HANDLING (APPLY_BLEND_STATE)
 }
 
-UINT Direct3DProcessor::AddSamplerState (D3D11_TEXTURE_ADDRESS_MODE mode)
+SamplerIndex_t Direct3DProcessor::AddSamplerState (D3D11_TEXTURE_ADDRESS_MODE mode)
 {
 	BEGIN_EXCEPTION_HANDLING
 
@@ -457,7 +457,7 @@ UINT Direct3DProcessor::AddSamplerState (D3D11_TEXTURE_ADDRESS_MODE mode)
 	END_EXCEPTION_HANDLING (ADD_SAMPLER_STATE)
 }
 
-void Direct3DProcessor::SendSamplerStateToPS (UINT n, UINT slot)
+void Direct3DProcessor::SendSamplerStateToPS (SamplerIndex_t n, UINT slot)
 {
 	BEGIN_EXCEPTION_HANDLING
 	if (n >= samplerStates_.size ())
@@ -553,7 +553,7 @@ void Direct3DProcessor::EnableShader (ShaderIndex_t desc)
 	END_EXCEPTION_HANDLING (ENABLE_SHADER)
 }
 
-UINT Direct3DProcessor::AddLayout (ShaderIndex_t desc,
+LayoutIndex_t Direct3DProcessor::AddLayout (ShaderIndex_t desc,
 								   bool position,
 								   bool normal,
  								   bool texture,
@@ -608,7 +608,7 @@ UINT Direct3DProcessor::AddLayout (ShaderIndex_t desc,
 	layouts_.push_back (nullptr);
 
 	result = device_->CreateInputLayout (inputElements.data (),
-										 inputElements.size (),
+										 static_cast<UINT> (inputElements.size ()),
 										 shaderManager_.GetBlob (desc)->GetBufferPointer (),
 										 shaderManager_.GetBlob (desc)->GetBufferSize (),
 										 &layouts_.back ());
@@ -620,7 +620,7 @@ UINT Direct3DProcessor::AddLayout (ShaderIndex_t desc,
 	END_EXCEPTION_HANDLING (ADD_LAYOUT)
 }
 
-void Direct3DProcessor::EnableLayout (UINT n)
+void Direct3DProcessor::EnableLayout (LayoutIndex_t n)
 {
 	BEGIN_EXCEPTION_HANDLING
 
@@ -636,7 +636,7 @@ void Direct3DProcessor::EnableLayout (UINT n)
 }
 
 
-void Direct3DProcessor::SetLayout (Direct3DObject* obj, UINT n)
+void Direct3DProcessor::SetLayout (Direct3DObject* obj, LayoutIndex_t n)
 {
 	BEGIN_EXCEPTION_HANDLING
 
@@ -652,7 +652,7 @@ void Direct3DProcessor::SetLayout (Direct3DObject* obj, UINT n)
 	END_EXCEPTION_HANDLING (SET_LAYOUT)
 }
 
-UINT Direct3DProcessor::RegisterConstantBuffer (void* data,
+ConstantBufferIndex_t Direct3DProcessor::RegisterConstantBuffer (void* data,
 							 size_t size,
 							 UINT slot)
 {
@@ -661,19 +661,19 @@ UINT Direct3DProcessor::RegisterConstantBuffer (void* data,
 	END_EXCEPTION_HANDLING (REGISTER_CONSTANT_BUFFER)
 }
 
-void Direct3DProcessor::UpdateConstantBuffer (UINT n)
+void Direct3DProcessor::UpdateConstantBuffer (ConstantBufferIndex_t n)
 {
 	cbManager_.Update (n, deviceContext_);
 }
-void Direct3DProcessor::SendCBToVS (UINT n)
+void Direct3DProcessor::SendCBToVS (ConstantBufferIndex_t n)
 {
 	cbManager_.SendVSBuffer (n, deviceContext_);
 }
-void Direct3DProcessor::SendCBToPS (UINT n)
+void Direct3DProcessor::SendCBToPS (ConstantBufferIndex_t n)
 {
 	cbManager_.SendPSBuffer (n, deviceContext_);
 }
-void Direct3DProcessor::SendCBToGS (UINT n)
+void Direct3DProcessor::SendCBToGS (ConstantBufferIndex_t n)
 {
 	cbManager_.SendGSBuffer (n, deviceContext_);
 }
@@ -727,6 +727,11 @@ void Direct3DProcessor::ReloadShaders ()
 	currentVertexShader_ = -1;
 	currentPixelShader_ = -1;
 	currentGeometryShader_ = -1;
+}
+
+ID3D11Device * Direct3DProcessor::GetDevice ()
+{
+	return device_;
 }
 
 

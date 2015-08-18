@@ -80,27 +80,28 @@ class Direct3DObject : NZA_t
 	CurrentMatrices currM_;
 	D3D11_PRIMITIVE_TOPOLOGY topology_;
 	bool blending_;
-	UINT objectId_;
+	uint64_t objectId_;
 
 	ID3D11Buffer* vertexBuffer_;
 	ID3D11Buffer* indexBuffer_;
 	Direct3DConstantBufferManager* cbManager_;
-	UINT objectBufferN_;
+	ConstantBufferIndex_t objectBufferN_;
 	bool buffersSet_;
 	bool objectBufferSet_;
 
 	ShaderIndex_t vertexShader_;
 	ShaderIndex_t pixelShader_;
 	ShaderIndex_t geometryShader_;
-	UINT layoutN_;
+	LayoutIndex_t layoutN_;
+	CRITICAL_SECTION draw_;
 
 	friend class Direct3DProcessor;
 
-	void SetID (UINT id);
+	void SetID (uint64_t id);
 
 	void ok ();
 
-	void SaveLayout (UINT n);
+	void SaveLayout (LayoutIndex_t n);
 
 	void SetCBManager (Direct3DConstantBufferManager* cbManager);
 	
@@ -113,6 +114,8 @@ public:
 
 	void AddVertexArray (Vertex_t* vert, 
 						 size_t n);
+
+	void ClearVertexArray ();
 
 	void AddIndexArray (UINT* ind,
 						size_t n);
@@ -131,6 +134,8 @@ public:
 	void SetVertexBuffer (ID3D11Device* device);
 	void SetIndexBuffer  (ID3D11Device* device);
 	void SetObjectBuffer (ID3D11Device* device);
+	void EnterCriticalSection ();
+	void ExitCriticalSection ();
 };
 
 

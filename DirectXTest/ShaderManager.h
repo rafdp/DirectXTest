@@ -2,7 +2,6 @@
 
 #include "includes.h"
 
-typedef UINT ShaderIndex_t;
 
 enum SHADER_TYPES
 {
@@ -39,6 +38,6 @@ public:
 	void* GetShader (ShaderIndex_t n);
 	ID3D10Blob* GetBlob (ShaderIndex_t n);
 	UINT GetType (ShaderIndex_t n);
-	bool CheckShaderType (UINT n);
+	bool CheckShaderType (ShaderIndex_t n);
 	void ReloadShaders (ID3D11Device* device);
 };
