@@ -137,9 +137,9 @@ void ParticleSystemGShader (point GSInput input[1],
 	OutputStream.RestartStrip ();
 
 
-	float3 shift = float3 (scale*2.0f*(sin (1024.0f * input[0].worldPos.x) / 2.0f + 0.5f),
-						   scale*2.0f*(cos (1124.0f * input[0].worldPos.y) / 2.0f + 0.5f),
-						   scale*2.0f*(sin (1224.0f * input[0].worldPos.z) / 2.0f + 0.5f));
+	float3 shift = float3 (scale*0.5f*(sin (1024.0f * input[0].worldPos.x) / 2.0f + 0.5f),
+						   scale*0.5f*(cos (1124.0f * input[0].worldPos.y) / 2.0f + 0.5f),
+						   scale*0.5f*(sin (1224.0f * input[0].worldPos.z) / 2.0f + 0.5f));
 
 	for (uint i2 = 0; i2 < size; i2++)
 	{

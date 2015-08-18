@@ -7,10 +7,11 @@ void Rayrefractor::ok ()
 
 float Rayrefractor::N (float t)
 {
-	static const float A = -1.304f*pow (10, -6);
+	/*static const float A = -1.304f*pow (10, -6);
 	static const float B = -3.633f*pow (10, -5);
 	static const float C = 1.333f;
-	return A*t*t + B*t + C;
+	return (A*t*t + B*t + C);*/
+	return (100.0f - t) / 25.0f + 1;
 }
 
 Rayrefractor::Rayrefractor (float temperatureTop,
@@ -56,10 +57,10 @@ void Rayrefractor::Process (const XMVECTOR& pos,
 	XMFLOAT3 coords = {};
 	XMStoreFloat3 (&coords, pos);
 	if (coords.y > transitionLength_ / 2.0f)
-		currentN = 1.5f/*N (temperatureTop_)*/;
+		currentN = N (temperatureTop_);
 	else
 	if (coords.y < -transitionLength_ / 2.0f)
-		currentN = 1.0f/*N (temperatureBottom_)*/;
+		currentN = N (temperatureBottom_);
 	else
 	{
 		float Ntop = N (temperatureTop_);
@@ -77,7 +78,7 @@ void Rayrefractor::Process (const XMVECTOR& pos,
 	float k = storedN / currentN;
 	float a = coords.x*coords.x / coords.z*coords.z;
 
-	coords.x = (coords.x < 0 ? (-1) : (+1)) * sqrt (k*(1.0f-y2) / (1 + 1/a));
+	coords.x = (coords.x < 0 ? (-1) : (+1)) * sqrt (k*(1.0f - y2) / (1 + 1/a));
 	coords.y = (coords.y < 0 ? (-1) : (+1)) * sqrt (1 - k + y2 * k);
 	coords.z = (coords.z < 0 ? (-1) : (+1)) * sqrt (k*(1.0f - y2) / (1 + a));
 

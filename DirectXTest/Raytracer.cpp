@@ -26,7 +26,7 @@ try :
 	rayStartPos_     (rayStartPos),
 	rayStartDir_     (rayStartDir),
 	nConstantBuffer_ (),
-	refract_         (90.0f, 0.0f, 0.0f)
+	refract_         (0.0f, 90.0f, 1.0f)
 {
 	ok ();
 	nConstantBuffer_ = ps_->proc_->RegisterConstantBuffer (&rayData_, 

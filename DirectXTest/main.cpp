@@ -36,9 +36,9 @@ int WINAPI WinMain (HINSTANCE hInstance,
 
 		Direct3DObject* particles = new (GetValidObjectPtr ())
 			Direct3DObject (world, false, false, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-		float x_ = 0.7f;
+		float x_ = 0.9f;
 		float y_ = 1.5f;
-		float z_ = 0.8f;
+		float z_ = 0.9f;
 #ifndef ENHANCE_PERFORMANCE
 		ParticleSystem ps (particles, &d3dProc,
 						   -1.0f, 1.0f,
@@ -50,7 +50,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 							 { 1.0f, 0.0f, 0.0f, 0.8f },
 							 4.0f, 1.0f, 0.05f, 0.5f, // cospow, scale, range, clip
 							 { x_, y_, z_ },
-							 { -0.1f - x_, -0.3f - y_, -0.5f - z_ });
+							 { -0.9f - x_, -0.8f - y_, -0.9f - z_ });
 #else
 		ParticleSystem ps (particles, &d3dProc,
 						   -1.0f, 1.0f,
