@@ -1,6 +1,7 @@
 #pragma once
 
 #include <exception>
+#include <iostream>
 #include <windows.h>
 #include <windowsx.h>
 #include <winuser.h>
@@ -13,6 +14,7 @@
 #include <map>
 #include <time.h>
 #include <thread>
+#include <string>
 
 #include <d3d11.h>
 #include <d3dx11.h>
@@ -25,7 +27,7 @@
 
 #define IGNORE_VERTEX_NORMAL
 #define IGNORE_VERTEX_TEXTURE
-#define ENHANCE_PERFORMANCE
+//#define ENHANCE_PERFORMANCE
 
 #ifdef GWL_USERDATA
 #define GWL_MY_USERDATA GWL_USERDATA

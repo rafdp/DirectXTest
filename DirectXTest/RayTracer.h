@@ -38,6 +38,7 @@ class Raytracer : NZA_t
 	Rayrefractor refract_;
 	volatile bool stop_;
 	volatile bool ready_;
+	float a;
 
 public:
 
@@ -81,5 +82,22 @@ public:
 	void SetTopTemp    (float setting);
 	void SetBottomTemp (float setting);
 	void SetTransition (float setting);
+
+	void Join ();
+	void Stop ();
 };
 
+class ScriptCompiler : NZA_t
+{
+	std::string filename_;
+	Raytracer* rt_;
+public:
+
+	void ok ();
+	ScriptCompiler (std::string filename,
+					Raytracer* rt);
+	~ScriptCompiler ();
+	friend DWORD WINAPI ScriptThread (void* ptr);
+
+	void Run ();
+};

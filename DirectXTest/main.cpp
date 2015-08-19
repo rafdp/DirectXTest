@@ -7,6 +7,8 @@ Direct3DObject* GetCube (Direct3DProcessor* proc);
 
 void ProcessShaderData (Raytracer* rt);
 
+DWORD WINAPI ScriptThread (void* ptr);
+
 
 
 int WINAPI WinMain (HINSTANCE hInstance,
@@ -58,7 +60,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 						   -1.0f, 1.0f,
 						   100000);
 		Raytracer raytracer (&ps, 2,
-							{ 0.0f, 0.8f, 1.0f, 0.075f },
+							{ 0.1f, 0.8f, 1.0f, 0.075f },
 							{ 1.0f, 0.0f, 0.0f, 0.8f },
 							 4.0f, 1.0f, 0.05f, 0.5f, // cospow, scale, range, clip
 							 { x_, y_, z_ },
@@ -85,9 +87,9 @@ int WINAPI WinMain (HINSTANCE hInstance,
 
 		cam.Update ();
 
-		printf ("Tracing ray\n");
-		raytracer.TraceRay ();
-		printf ("Ray ready\n");
+		//printf ("Tracing ray\n");
+		//raytracer.TraceRay ();
+		//printf ("Ray ready\n");
 		SetForegroundWindow (window.hwnd ());
 
 		ps.DumpVerticesToObject ();
@@ -97,6 +99,10 @@ int WINAPI WinMain (HINSTANCE hInstance,
 
 		
 		MSG msg = {};
+		ScriptCompiler sc ("script.txt", &raytracer);
+
+		CreateThread (NULL, 0, ScriptThread, &sc, 0, NULL);
+
 		while (true)
 		{
 			t.start ();
@@ -132,7 +138,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 			time += t.GetElapsedTime ("mks");
 			if (time >= 500000.0)
 			{
-				printf ("\r%f %d     ", raytracer.GetCosPow (), frames * 2);
+				//printf ("\r%f %d     ", raytracer.GetCosPow (), frames * 2);
 				time = 0.0;
 				frames = 0;
 			}
@@ -280,4 +286,35 @@ void ProcessShaderData (Raytracer* rt)
 		rt->Update ();
 		while (GetAsyncKeyState (VK_RETURN));
 	}
+}
+
+DWORD WINAPI ScriptThread (void* ptr)
+{
+	try {
+	ScriptCompiler* sc = reinterpret_cast <ScriptCompiler*> (ptr);
+	while (sc->not_yet_destroyed_)
+	{
+		if (GetAsyncKeyState (VK_F3))
+		{
+			while (GetAsyncKeyState (VK_F3));
+			sc->Run ();
+		}
+		Sleep (100);
+	}
+	return 0;
+	}
+	catch (ExceptionHandler_t& ex)
+	{
+		_MessageBox ("Exception occurred (WINDOW_CALLBACK)\nCheck \"ExceptionErrors.txt\"");
+		ex.WriteLog (__EXPN__);
+		system ("start ExceptionErrors.txt");
+	}
+	catch (std::exception err)
+	{
+		_MessageBox ("Exception occurred: %s\n", err.what ());
+	}
+	catch (...)
+	{
+		_MessageBox ("Exception occurred\n");
+}
 }

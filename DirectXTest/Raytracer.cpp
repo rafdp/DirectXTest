@@ -85,6 +85,15 @@ void Raytracer::TraceRay ()
 	END_EXCEPTION_HANDLING (TRACE_RAY)
 }
 
+void Raytracer::Stop ()
+{
+	BEGIN_EXCEPTION_HANDLING
+	if (!ready_) stop_ = true;
+	while (!ready_);
+
+	END_EXCEPTION_HANDLING (STOP)
+}
+
 void Raytracer::SetDrawRayOnly ()
 {
 	rayData_.rayOnly = fabs (rayData_.rayOnly);
@@ -343,4 +352,114 @@ void Raytracer::SetBottomTemp (float setting)
 void Raytracer::SetTransition (float setting)
 {
 	refract_.SetTransitionLength (setting);
+}
+void Raytracer::Join ()
+{
+	if (!ready_)
+		while (!ready_);
+}
+
+void ScriptCompiler::ok ()
+{
+	DEFAULT_OK_BLOCK
+	if (!rt_)
+		_EXC_N (NULL_RAYTRACER_PTR, "ScriptCompiler: Null Raytracer ptr")
+}
+
+
+ScriptCompiler::ScriptCompiler (std::string filename,
+								Raytracer* rt)
+	try :
+	filename_ (filename),
+	rt_       (rt)
+{}
+_END_EXCEPTION_HANDLING (CTOR)
+ScriptCompiler::~ScriptCompiler ()
+{
+	filename_.clear ();
+	rt_ = nullptr;
+}
+
+void ScriptCompiler::Run ()
+{
+	BEGIN_EXCEPTION_HANDLING
+	FILE* f = nullptr;
+	fopen_s (&f, filename_.c_str (), "r");
+
+	if (!f)
+	{
+		_MessageBox ("Failed to open script \"%s\"", filename_.c_str ());
+		return;
+	}
+	std::string current;
+	char buffer[4096] = "";
+	uint16_t index = 0;
+	float arg = 0.0f;
+	uint32_t line = 0;
+	while (!feof (f))
+	{
+		index = 0;
+		current.clear ();
+		arg = 0.0f;
+		fgets (buffer, 4096, f);
+		while (buffer[index] == ' ' && buffer[index] && buffer[index] != '\n') index++;
+		if (!buffer[index] || buffer[index] == '\n') continue;
+		while (buffer[index] != ' ' && buffer[index] && buffer[index] != '\n')
+		{
+			current += buffer[index];
+			index++;
+		}
+
+		if (current == "Render")
+		{
+			rt_->TraceRay ();
+			continue;
+		}
+		if (current == "Join")
+		{
+			rt_->Join ();
+			continue;
+		}
+
+		while (buffer[index] != ' ' && buffer[index] && buffer[index] != '\n')
+		{
+			current += buffer[index];
+			index++;
+		}
+		
+		while (buffer[index] == ' ' && buffer[index] && buffer[index] != '\n') index++;
+		char c = *(buffer + index);
+		if ((c > '9' || c < '0') && c != '+' && c != '-')
+		{
+			_MessageBox ("Invalid character:\n%s\n\index %d \'%c\'", 
+						 buffer, 
+						 c, 
+						 index);
+			return;
+		}
+		arg = float (atof (buffer + index));
+
+#define CHECK_CURRENT(name) if (current == #name) { rt_->##name (arg); rt_->Update (); continue;}
+#define CHECK_CURRENT_(name) if (current == #name) { rt_->##name (arg);  continue;}
+
+		//_MessageBox ("%u", line);
+		CHECK_CURRENT_ (SetTopTemp)
+		CHECK_CURRENT_ (SetBottomTemp)
+		CHECK_CURRENT_ (SetTransition)
+		CHECK_CURRENT (SetRayColorR)
+		CHECK_CURRENT (SetRayColorG)
+		CHECK_CURRENT (SetRayColorB)
+		CHECK_CURRENT (SetRayColorA)
+		CHECK_CURRENT (SetRange)
+		CHECK_CURRENT (SetCosPow)
+		CHECK_CURRENT (SetCosClip)
+#undef CHECK_CURRENT_ 
+#undef CHECK_CURRENT
+
+		_MessageBox ("Found illegal line:\n%s", buffer);
+
+	}
+
+	fclose (f);
+	END_EXCEPTION_HANDLING (RUN)
 }
