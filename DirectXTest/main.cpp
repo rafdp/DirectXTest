@@ -46,7 +46,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
-						   1000000);
+						   2000000);
 		Raytracer raytracer (&ps, 2,
 							 { 0.0f, 0.8f, 1.0f, 0.08f },
 							 { 1.0f, 0.0f, 0.0f, 0.8f },
@@ -316,5 +316,5 @@ DWORD WINAPI ScriptThread (void* ptr)
 	catch (...)
 	{
 		_MessageBox ("Exception occurred\n");
-}
+	}
 }

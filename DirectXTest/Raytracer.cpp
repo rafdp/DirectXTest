@@ -152,22 +152,21 @@ DWORD WINAPI Raytracer::ParallelProcessing (void* ptr)
 		XMVECTOR currentPos = XMLoadFloat3 (&_this.rayStartPos_);
 		XMVECTOR currentDir = XMVector3Normalize (XMLoadFloat3 (&_this.rayStartDir_));
 		float currentN = 1.0f;
-		float distance = 0.0f;
+		XMFLOAT2 distance = {};
 		std::vector<Vertex_t>& particles = _this.ps_->particles_;
-		XMVECTOR d = XMVectorSet (0.0f, 0.0f, 0.0f, 0.0f);
 		
-		for (auto i = particles.begin ();
+		/*for (auto i = particles.begin ();
 		i < particles.end ();
 			i++)
-			i->a = -1.0f;
+			i->a = -1.0f;*/
 
 		float step = float (_this.rayData_.range / 3.0 * fabs (_this.rayData_.rayOnly));
 
 		while (true)
 		{
 			XMVECTOR d = XMVector3Length (currentPos);
-			XMStoreFloat (&distance, d);
-			if (distance <= sqrt (3.0f)) break;
+			XMStoreFloat2 (&distance, currentPos);
+			if (distance.y < 1.0f && distance.y > -1.0f) break;
 
 			currentPos += currentDir * step;
 			iterations++;
@@ -186,9 +185,9 @@ DWORD WINAPI Raytracer::ParallelProcessing (void* ptr)
 		float currentNbak = currentN;
 		while (true)
 		{
-			d = XMVector3Length (currentPosBak);
-			XMStoreFloat (&distance, d);
-			if (distance > sqrt (3.0f)) break;
+
+			XMStoreFloat2 (&distance, currentPosBak);
+			if (distance.y > 1.0f || distance.y < -1.0f) break;
 			iterations++;
 			_this.refract_.Process (currentPosBak, currentDirBak, currentNbak);
 
@@ -206,16 +205,17 @@ DWORD WINAPI Raytracer::ParallelProcessing (void* ptr)
 		uint64_t sizeSingle = size / threadsN;
 		uint64_t shift = 0;
 
-		ThreadData_t data = { &currentPos, _this.rayData_.range };
+		ThreadData_t data (&currentPos, _this.rayData_.range);
 
 		while (true)
 		{
 			if (_this.stop_) { _this.stop_ = false; return 0; }
 			PrintfProgressBar (iterations, Niterations);
-			d = XMVector3Length (currentPos);
-			XMStoreFloat (&distance, d);
-			if (distance >= sqrt (3.0f)) break;
+
+			XMStoreFloat2 (&distance, currentPos);
+			if (distance.y > 1.0f || distance.y < -1.0f) break;
 			data.done = 0;
+			//_putch ('C');
 			//thread stuff
 			{
 				for (uint8_t i = 0; i < threadsN - 1; i++)
@@ -244,7 +244,7 @@ DWORD WINAPI Raytracer::ParallelProcessing (void* ptr)
 							  NULL);
 			}
 
-			while (data.done != 4);
+			while (data.done < threadsN);
 
 			_this.refract_.Process (currentPos, currentDir, currentN);
 
@@ -286,7 +286,7 @@ DWORD WINAPI Raytracer::ParallelProcessing (void* ptr)
 
 void Raytracer::SetCosPow (float setting)
 {
-	if (setting > -1.0f && setting < 20.0f)
+	if (setting > -1.0f && setting <= 20.1f)
 		rayData_.cosPow = setting;
 }
 void Raytracer::SetRange (float setting)
@@ -359,6 +359,20 @@ void Raytracer::Join ()
 		while (!ready_);
 }
 
+void Raytracer::Clear ()
+{
+	for (auto i = ps_->particles_.begin ();
+	i < ps_->particles_.end ();
+		i++)
+		i->a = -1.0f;
+	ps_->object_->EnterCriticalSection ();
+	ps_->object_->ClearVertexArray ();
+	ps_->object_->AddVertexArray (ps_->particles_.data (),
+		   						  ps_->particles_.size ());
+	ps_->object_->SetVertexBuffer (ps_->proc_->GetDevice ());
+	ps_->object_->ExitCriticalSection ();
+}
+
 void ScriptCompiler::ok ()
 {
 	DEFAULT_OK_BLOCK
@@ -420,6 +434,11 @@ void ScriptCompiler::Run ()
 			rt_->Join ();
 			continue;
 		}
+		if (current == "Clear")
+		{
+			rt_->Join ();
+			continue;
+		}
 
 		while (buffer[index] != ' ' && buffer[index] && buffer[index] != '\n')
 		{
@@ -463,3 +482,19 @@ void ScriptCompiler::Run ()
 	fclose (f);
 	END_EXCEPTION_HANDLING (RUN)
 }
+
+ThreadData_t::ThreadData_t (const ThreadData_t & that) : 
+	currentPos (that.currentPos),
+	range      (that.range),
+	data       (that.data),
+	size       (that.size)
+{}
+
+ThreadData_t::ThreadData_t (XMVECTOR * currentPos_, float range_) : 
+	currentPos (currentPos_),
+	range      (range_),
+	data       (),
+	size       (),
+	read       (),
+	done       ()
+{}

@@ -76,7 +76,9 @@ void Rayrefractor::Process (const XMVECTOR& pos,
 
 	float y2 = coords.y*coords.y;
 	float k = storedN / currentN;
-	float a = coords.x*coords.x / coords.z*coords.z;
+	float a = coords.x*coords.x / (coords.z*coords.z);
+
+	//_MessageBox ("%f", coords.x/coords.z - sqrt (k*(1.0f - y2) / (1 + 1 / a)) / sqrt (k*(1.0f - y2) / (1 + a)));
 
 	coords.x = (coords.x < 0 ? (-1) : (+1)) * sqrt (k*(1.0f - y2) / (1 + 1/a));
 	coords.y = (coords.y < 0 ? (-1) : (+1)) * sqrt (1 - k + y2 * k);

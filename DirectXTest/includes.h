@@ -20,6 +20,7 @@
 #include <d3dx11.h>
 #include <d3dx10.h>
 #include <xnamath.h>
+#include <atomic>
 
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dx11.lib")

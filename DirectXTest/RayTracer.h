@@ -14,6 +14,7 @@ struct RaytracerCBData_t
 	};
 };
 #pragma pack (pop)
+class Raytracer;
 
 struct ThreadData_t
 {
@@ -22,7 +23,10 @@ struct ThreadData_t
 	Vertex_t* data;
 	uint64_t size;
 	volatile bool read;
-	volatile uint8_t done;
+	volatile std::atomic<char> done;
+
+	ThreadData_t (const ThreadData_t& that);
+	ThreadData_t (XMVECTOR* currentPos_, float range_);
 };
 
 DWORD WINAPI ThreadedRaytracing (void* ptr);
@@ -85,6 +89,7 @@ public:
 
 	void Join ();
 	void Stop ();
+	void Clear ();
 };
 
 class ScriptCompiler : NZA_t
