@@ -187,7 +187,14 @@ DWORD WINAPI Raytracer::ParallelProcessing (void* ptr)
 		{
 
 			XMStoreFloat2 (&distance, currentPosBak);
-			if (distance.y > 1.0f || distance.y < -1.0f) break;
+			if (distance.y > 1.0f) break;
+			if (distance.y < -1.0f)
+			{
+				XMFLOAT3 temp = {};
+				XMStoreFloat3 (&temp, currentDirBak);
+				temp.y *= -1;
+				currentDirBak = XMLoadFloat3 (&temp);
+			}
 			iterations++;
 			_this.refract_.Process (currentPosBak, currentDirBak, currentNbak);
 
@@ -201,7 +208,7 @@ DWORD WINAPI Raytracer::ParallelProcessing (void* ptr)
 		iterations = 0;
 
 		size_t size = particles.size ();
-		UINT threadsN = std::thread::hardware_concurrency ();
+		UINT threadsN = std::thread::hardware_concurrency () - 1;
 		uint64_t sizeSingle = size / threadsN;
 		uint64_t shift = 0;
 
@@ -213,7 +220,14 @@ DWORD WINAPI Raytracer::ParallelProcessing (void* ptr)
 			PrintfProgressBar (iterations, Niterations);
 
 			XMStoreFloat2 (&distance, currentPos);
-			if (distance.y > 1.0f || distance.y < -1.0f) break;
+			if (distance.y > 1.0f) break;
+			if (distance.y < -1.0f)
+			{
+				XMFLOAT3 temp = {};
+				XMStoreFloat3 (&temp, currentDir);
+				temp.y *= -1;
+				currentDir = XMLoadFloat3 (&temp);
+			}
 			data.done = 0;
 			//_putch ('C');
 			//thread stuff
