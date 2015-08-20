@@ -26,7 +26,7 @@ try :
 	rayStartPos_     (rayStartPos),
 	rayStartDir_     (rayStartDir),
 	nConstantBuffer_ (),
-	refract_         (0.0f, 60.0f, 1.0f),
+	refract_         (0.0f, 90.0f, 1.0f),
 	stop_            (false),
 	ready_           (true)
 {

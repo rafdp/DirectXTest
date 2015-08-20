@@ -1,0 +1,9 @@
+SetTopTemp 50
+SetBottomTemp 50
+
+SetRayColorR 0.0
+SetRayColorG 1.0
+SetRayColorB 1.0
+
+SetCosPow 9
+

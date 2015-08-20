@@ -11,7 +11,7 @@ float Rayrefractor::N (float t)
 	static const float B = -3.633f*pow (10, -5);
 	static const float C = 1.333f;
 	return A*t*t + B*t + C;*/
-	return (100.0f - t) / 25.0f + 1;
+	return (100.0f - t) / 5.0f + 1;
 }
 
 Rayrefractor::Rayrefractor (float temperatureTop,

@@ -46,11 +46,11 @@ int WINAPI WinMain (HINSTANCE hInstance,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
 						   -1.0f, 1.0f,
-						   2000000);
+						   1000000);
 		Raytracer raytracer (&ps, 2,
 							 { 0.0f, 0.8f, 1.0f, 0.08f },
 							 { 1.0f, 0.0f, 0.0f, 0.8f },
-							 4.0f, 1.0f, 0.05f, 0.5f, // cospow, scale, range, clip
+							 4.0f, 0.9f, 0.05f, 0.5f, // cospow, scale, range, clip
 							 { x_, y_, z_ },
 							 { -0.9f - x_, -0.8f - y_, -0.9f - z_ });
 #else

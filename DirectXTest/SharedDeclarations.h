@@ -110,8 +110,8 @@ enum ERRORS
 	E (115, RUN)
 };
 
-const wchar_t  APPLICATION_TITLE_W[] = L"DirectXTest";
-const char     APPLICATION_TITLE_A[] = "DirectXTest";
+const wchar_t  APPLICATION_TITLE_W[] = L"WaterOptics";
+const char     APPLICATION_TITLE_A[] = "WaterOptics";
 const uint16_t MAX_STRING_LENGTH = 512;
 const UINT     CONST_WINDOW_STYLE = WS_MINIMIZEBOX | WS_BORDER | WS_CAPTION | WS_SYSMENU;
 
